@@ -146,14 +146,18 @@ textarea:focus{outline:2px solid var(--tint);outline-offset:0}
 .field input{border:0;background:none;padding:13px 16px 13px 0;width:100%}
 .field input:focus,.body-text:focus{outline:none}
 .body-text{background:none;border-radius:0;min-height:200px;padding:13px 16px}
-.files{list-style:none;margin:0;padding:0}
-.files li{display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;align-items:center;padding:8px 16px}
-.files li + li{border-top:.5px solid var(--sep)}
-.files img,.ficon{width:44px;height:44px;border-radius:6px;object-fit:cover;display:block;background:var(--fill)}
-.ficon{display:grid;place-items:center;color:var(--tint)}
-.ficon svg{width:22px;height:22px}
-.fname{font-size:15px;overflow-wrap:anywhere}
-.fsize{font-size:13px;color:var(--label2);font-variant-numeric:tabular-nums}
+.body-text.short{min-height:110px}
+.busy{display:flex;align-items:center;gap:10px;padding:16px;color:var(--label2);font-size:15px}
+.pages{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.page{padding:0;border:0;background:none;border-radius:4px;overflow:hidden;box-shadow:0 0 0 .5px var(--sep)}
+.page img{display:block;width:100%;max-width:100%;aspect-ratio:210/297;object-fit:cover}
+#fsum{overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+/* page viewer shows the PDF page itself, so it keeps fixed colors in both themes */
+.viewer{
+  position:fixed; inset:0; z-index:40; background:rgba(0,0,0,.88); display:grid; place-items:center;
+  padding:calc(12px + env(safe-area-inset-top,0px)) 12px calc(12px + env(safe-area-inset-bottom,0px));
+}
+.viewer img{max-width:100%;max-height:100%;background:#FFFFFF;display:block}
 .actions{display:grid;gap:10px;margin-top:24px}
 .note{font-size:13px;color:var(--label2);margin:10px 16px 0;text-align:center}
 .note.left{text-align:left}
@@ -222,6 +226,7 @@ textarea:focus{outline:2px solid var(--tint);outline-offset:0}
 </nav>
 
 <div id="toast" class="toast" role="status" hidden></div>
+<div id="viewer" class="viewer" hidden><img alt="PDF puslapis"></div>
 
 <section id="step" class="sheet with-bar" aria-labelledby="stepTitle" hidden>
   <div class="app">
@@ -249,20 +254,24 @@ textarea:focus{outline:2px solid var(--tint);outline-offset:0}
       <h2 id="sheetTitle">Laiškas</h2>
       <span></span>
     </div>
-    <div class="group">
-      <div class="field"><label for="subj">Tema</label><input id="subj" type="text"></div>
-      <textarea id="body" class="body-text" aria-label="Laiško tekstas"></textarea>
+    <div class="sec">
+      <div class="sec-h"><span>Priedas: PDF dokumentas</span></div>
+      <div id="pdfBusy" class="group busy"></div>
+      <div id="pages" class="pages" hidden></div>
+      <p id="fsum" class="note left"></p>
     </div>
     <div class="sec">
-      <div class="sec-h"><span>Priedai</span><span id="fsum"></span></div>
-      <ul id="files" class="group files"></ul>
+      <div class="sec-h"><span>Laiško tekstas</span></div>
+      <div class="group">
+        <div class="field"><label for="subj">Tema</label><input id="subj" type="text"></div>
+        <textarea id="body" class="body-text short" aria-label="Laiško tekstas"></textarea>
+      </div>
     </div>
     <div class="actions">
-      <button id="share" class="btn primary" type="button">
+      <button id="share" class="btn primary" type="button" disabled>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7.5 7.5L12 3l4.5 4.5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>
         Bendrinti į Gmail
       </button>
-      <button id="copy" class="btn secondary" type="button">Kopijuoti tekstą</button>
     </div>
     <p class="note">Atsidarys telefono bendrinimo langas. Jame pasirink Gmail.</p>
     <p id="shared" class="note" role="status" hidden>Perduota. Kai laiškas Gmail paruoštas, sąrašo apačioje gali pradėti naują apžiūrą.</p>
@@ -320,7 +329,6 @@ const ICON = {
   mic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5"/></svg>',
   play: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>',
   pause: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6.5" y="5" width="4" height="14" rx="1"/><rect x="13.5" y="5" width="4" height="14" rx="1"/></svg>',
-  wave: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2"/></svg>',
 };
 
 let state = {station: '', date: today(), entries: []};
@@ -569,55 +577,134 @@ twoTap($('#reset'), 'Pradėti naują apžiūrą', 'Ištrinti viską ir pradėti 
   $('#station').value = ''; save(); render(); scrollTo(0, 0);
 });
 
-// Letter: transcripts go into the text; a voice file is attached only when it has no text
-let attached = [];
-function letter() {
-  const st = state.station.trim() || 'Degalinė nenurodyta', base = `${ascii(state.station.trim())}_${state.date}`;
-  const files = [], lines = [];
-  state.entries.forEach((e, i) => {
-    const nn = String(i + 1).padStart(2, '0'), pn = `${base}_${nn}.jpg`, text = e.text.trim();
-    files.push({file: new File([e.photo], pn, {type: 'image/jpeg'}), thumb: e.photo});
-    let refs = `Nuotrauka: ${pn}`;
-    if (e.audio && !text) {
-      const an = `${base}_${nn}_balsas.${ext(e.audio)}`;
-      files.push({file: new File([e.audio], an, {type: e.audio.type || 'audio/mp4'}), thumb: null});
-      refs += ` · Balsas: ${an} (${mmss(e.dur)})`;
+// Letter: one PDF with every photo next to its note; a voice file is attached only when it has no text.
+// Pages are drawn on a canvas with the phone's own font (Lithuanian letters just work) and stored as JPEGs.
+const A4W = 1240, A4H = 1754, M = 90, HEAD = 250, FOOT = 70, GAP = 44;  // A4 at 150 dpi
+const PHOTO_W = 560, PHOTO_H = 420, TX = M + PHOTO_W + 36, TW = A4W - M - TX, LH = 38;
+const FONT = 'system-ui,-apple-system,"Helvetica Neue",Helvetica,Arial,sans-serif';
+const loadImg = async b => { const img = new Image(); img.src = urlOf(b); await img.decode(); return img; };
+function wrap(ctx, text, width) {
+  const lines = [];
+  for (const para of text.split('\n')) {
+    let line = '';
+    for (const w of para.split(/\s+/).filter(Boolean)) {
+      const t = line ? line + ' ' + w : w;
+      if (!line || ctx.measureText(t).width <= width) line = t; else { lines.push(line); line = w; }
     }
-    lines.push(`${i + 1}. ${text || (e.audio ? 'Balso pastaba priede' : 'Be pastabos')}\n   ${refs}`);
-  });
-  return {
-    subject: `Apžiūra: ${st} · ${state.date}`,
-    body: `Degalinė: ${st}\nData: ${state.date}, ${state.entries[0].time}\n\n${lines.join('\n\n')}`,
-    files,
-  };
+    if (line) lines.push(line);
+  }
+  return lines;
 }
-$('#send').onclick = () => {
+async function renderPages() {
+  const es = state.entries, st = state.station.trim() || 'Degalinė nenurodyta', times = es.map(e => e.time).sort();
+  const c = document.createElement('canvas'); c.width = A4W; c.height = A4H;
+  const x = c.getContext('2d');
+  x.font = `26px ${FONT}`;
+  // ponytail: a note taller than a whole page runs past the footer; split it across pages if that ever happens
+  const items = es.map((e, i) => {
+    const t = e.text.trim(), lines = t ? wrap(x, t, TW) : [e.audio ? 'Balso pastaba nepaversta tekstu.' : 'Be pastabos.'];
+    return {e, i, lines, muted: !t, h: Math.max(PHOTO_H, 72 + lines.length * LH)};
+  });
+  const pages = [[]];
+  let y = M + HEAD;
+  for (const it of items) {
+    if (pages.at(-1).length && y + it.h > A4H - M - FOOT) { pages.push([]); y = M; }
+    it.y = y; pages.at(-1).push(it); y += it.h + GAP;
+  }
+  const out = [];
+  for (const [p, list] of pages.entries()) {
+    x.fillStyle = '#FFFFFF'; x.fillRect(0, 0, A4W, A4H);
+    if (p === 0) {
+      x.fillStyle = '#6D6D72'; x.font = `600 24px ${FONT}`; x.fillText('DEGALINĖS APŽIŪRA', M, M + 24);
+      x.fillStyle = '#000000'; x.font = `700 56px ${FONT}`; x.fillText(st, M, M + 98);
+      x.fillStyle = '#6D6D72'; x.font = `28px ${FONT}`;
+      x.fillText(`${state.date} · ${times[0]}–${times.at(-1)} · ${es.length} ${plural(es.length, PH)}`, M, M + 148);
+      x.fillStyle = '#C6C6C8'; x.fillRect(M, M + 190, A4W - 2 * M, 2);
+    }
+    for (const [j, it] of list.entries()) {
+      if (j) { x.fillStyle = '#E5E5EA'; x.fillRect(M, it.y - GAP / 2, A4W - 2 * M, 2); }
+      const img = await loadImg(it.e.photo);
+      const k = Math.min(PHOTO_W / img.naturalWidth, PHOTO_H / img.naturalHeight);
+      x.drawImage(img, M, it.y, img.naturalWidth * k, img.naturalHeight * k);
+      const num = String(it.i + 1);
+      x.fillStyle = '#000000'; x.font = `700 34px ${FONT}`; x.fillText(num, TX, it.y + 32);
+      const nw = x.measureText(num).width;
+      x.fillStyle = '#6D6D72'; x.font = `24px ${FONT}`; x.fillText(it.e.time, TX + nw + 14, it.y + 32);
+      x.fillStyle = it.muted ? '#8A8A8E' : '#000000'; x.font = `26px ${FONT}`;
+      it.lines.forEach((l, n) => x.fillText(l, TX, it.y + 82 + n * LH));
+    }
+    x.fillStyle = '#8A8A8E'; x.font = `22px ${FONT}`;
+    x.fillText(`Apžiūra · ${st} · ${state.date}`, M, A4H - M + 30);
+    x.textAlign = 'right'; x.fillText(`${p + 1} / ${pages.length}`, A4W - M, A4H - M + 30); x.textAlign = 'left';
+    out.push(await new Promise((ok, fail) => c.toBlob(b => b ? ok(b) : fail(new Error('toBlob')), 'image/jpeg', 0.8)));
+  }
+  return out;
+}
+// Minimal PDF: each page is one full-page JPEG, embedded as is (DCTDecode)
+async function makePdf(jpegs) {
+  const enc = new TextEncoder(), parts = [], offs = [];
+  let len = 0;
+  const put = s => { const b = typeof s === 'string' ? enc.encode(s) : s; parts.push(b); len += b.length; };
+  const obj = (n, ...body) => { offs[n] = len; put(`${n} 0 obj\n`); body.forEach(put); put('\nendobj\n'); };
+  const W = 595.28, H = 841.89, n = jpegs.length;
+  put('%PDF-1.4\n'); put(new Uint8Array([37, 226, 227, 207, 211, 10]));
+  obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
+  obj(2, `<< /Type /Pages /Count ${n} /Kids [${jpegs.map((_, i) => `${3 + 3 * i} 0 R`).join(' ')}] >>`);
+  for (const [i, jpg] of jpegs.entries()) {
+    const p = 3 + 3 * i, bytes = new Uint8Array(await jpg.arrayBuffer()), cs = `q ${W} 0 0 ${H} 0 0 cm /Im0 Do Q`;
+    obj(p, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /XObject << /Im0 ${p + 2} 0 R >> >> /Contents ${p + 1} 0 R >>`);
+    obj(p + 1, `<< /Length ${cs.length} >>\nstream\n${cs}\nendstream`);
+    obj(p + 2, `<< /Type /XObject /Subtype /Image /Width ${A4W} /Height ${A4H} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${bytes.length} >>\nstream\n`, bytes, '\nendstream');
+  }
+  const xref = len, size = 3 + 3 * n;
+  put(`xref\n0 ${size}\n0000000000 65535 f \n${offs.slice(1).map(o => String(o).padStart(10, '0') + ' 00000 n \n').join('')}`);
+  put(`trailer\n<< /Size ${size} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+  return new Blob(parts, {type: 'application/pdf'});
+}
+
+let doc = null, pageUrls = [], buildId = 0;
+function view(u) { $('#viewer img').src = u; $('#viewer').hidden = false; }
+$('#viewer').onclick = () => { $('#viewer').hidden = true; };
+$('#send').onclick = async () => {
   if (rec) rec.mr.stop();
   if (state.entries.some(e => e.tx === 'busy')) toast('Dar verčiu balsą į tekstą. Palauk kelias sekundes ir atidaryk laišką iš naujo.');
-  const L = letter(); attached = L.files;
-  $('#subj').value = L.subject; $('#body').value = L.body;
-  $('#files').replaceChildren(...L.files.map(({file, thumb}) => {
-    const li = document.createElement('li');
-    const icon = thumb ? Object.assign(document.createElement('img'), {src: urlOf(thumb), alt: ''}) : Object.assign(document.createElement('div'), {className: 'ficon', innerHTML: ICON.wave});
-    const txt = document.createElement('div');
-    txt.innerHTML = '<div class="fname"></div><div class="fsize"></div>';
-    txt.firstChild.textContent = file.name; txt.lastChild.textContent = fmt(file.size);
-    li.append(icon, txt); return li;
-  }));
-  $('#fsum').textContent = `${L.files.length} · ${fmt(L.files.reduce((s, x) => s + x.file.size, 0))}`;
-  $('#shared').hidden = true;
+  const es = state.entries, st = state.station.trim() || 'Degalinė nenurodyta', times = es.map(e => e.time).sort();
+  const notes = es.map((e, i) => `${i + 1}. ${e.text.trim() || (e.audio ? 'Balso pastaba nepaversta tekstu' : 'Be pastabos')}`).join('\n');
+  $('#subj').value = `Apžiūra: ${st} · ${state.date}`;
+  $('#body').value = `Degalinė: ${st}\nData: ${state.date}, ${times[0]}–${times.at(-1)}\n\nPastabos:\n${notes}\n\nNuotraukos su pastabomis yra PDF priede.`;
+  const run = ++buildId;
+  doc = null; pageUrls.forEach(u => URL.revokeObjectURL(u)); pageUrls = [];
+  $('#pages').replaceChildren(); $('#pages').hidden = true; $('#fsum').textContent = '';
+  $('#pdfBusy').innerHTML = '<span class="spin"></span>Kuriu PDF dokumentą…'; $('#pdfBusy').hidden = false;
+  $('#share').disabled = true; $('#shared').hidden = true;
   show('#sheet'); $('#back').focus();
+  try {
+    const jpegs = await renderPages(), pdf = await makePdf(jpegs);
+    if (run !== buildId) return;
+    const base = `${ascii(state.station.trim())}_${state.date}`, name = `Apziura_${base}.pdf`;
+    const voice = es.filter(e => e.audio && !e.text.trim()).map(e => new File([e.audio],
+      `${base}_${String(es.indexOf(e) + 1).padStart(2, '0')}_balsas.${ext(e.audio)}`, {type: e.audio.type || 'audio/mp4'}));
+    doc = [new File([pdf], name, {type: 'application/pdf'}), ...voice];
+    pageUrls = jpegs.map(b => URL.createObjectURL(b));
+    $('#pages').replaceChildren(...pageUrls.map((u, i) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'page'; b.setAttribute('aria-label', `Atidaryti ${i + 1} puslapį`);
+      b.append(Object.assign(document.createElement('img'), {src: u, alt: ''}));
+      b.onclick = () => view(u);
+      return b;
+    }));
+    $('#fsum').textContent = `${name} · ${jpegs.length} psl. · ${fmt(pdf.size)}` + (voice.length ? ` · dar ${voice.length} ${plural(voice.length, ['garso failas', 'garso failai', 'garso failų'])} be teksto` : '');
+    $('#pdfBusy').hidden = true; $('#pages').hidden = false; $('#share').disabled = false;
+  } catch {
+    if (run === buildId) $('#pdfBusy').textContent = 'Nepavyko sukurti PDF. Grįžk atgal ir bandyk dar kartą.';
+  }
 };
-$('#back').onclick = () => { hide(); $('#send').focus(); };
+$('#back').onclick = () => { buildId++; hide(); $('#send').focus(); };
 $('#share').onclick = async () => {
-  const data = {files: attached.map(x => x.file), title: $('#subj').value, text: $('#body').value};
-  if (!navigator.canShare?.(data)) return toast('Šiame lange failų bendrinti negalima. Atidaryk programėlę iš telefono pradžios ekrano.');
+  const data = {files: doc, title: $('#subj').value, text: $('#body').value};
+  if (!doc || !navigator.canShare?.(data)) return toast('Šiame lange failų bendrinti negalima. Atidaryk programėlę iš telefono pradžios ekrano.');
   try { await navigator.share(data); $('#shared').hidden = false; }
   catch (err) { if (err.name !== 'AbortError') toast('Nepavyko atidaryti bendrinimo lango.'); }
-};
-$('#copy').onclick = async () => {
-  try { await navigator.clipboard.writeText(`${$('#subj').value}\n\n${$('#body').value}`); toast('Tekstas nukopijuotas.'); }
-  catch { toast('Nepavyko nukopijuoti. Pažymėk tekstą ir kopijuok ranka.'); }
 };
 
 (async () => {
