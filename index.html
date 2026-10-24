@@ -311,7 +311,7 @@ textarea:focus{outline:2px solid var(--tint);outline-offset:0}
       <p class="note left">Raktas laikomas tik šiame telefone. Jis siunčiamas tik į OpenAI, kai balso pastabą reikia paversti tekstu.</p>
     </div>
     <div class="actions"><button id="keySave" class="btn primary" type="button">Išsaugoti</button></div>
-    <p class="note">Versija 2026-10-24.6</p>
+    <p class="note">Versija 2026-10-24.7</p>
   </div>
 </section>
 
@@ -615,8 +615,8 @@ async function renderPages() {
   x.font = `26px ${FONT}`;
   // ponytail: a note taller than a whole page runs past the footer; split it across pages if that ever happens
   const items = es.map((e, i) => {
-    const t = e.text.trim(), lines = t ? wrap(x, t, TW) : [e.audio ? 'Balso pastaba nepaversta tekstu.' : 'Be pastabos.'];
-    return {e, i, lines, muted: !t, h: Math.max(PHOTO_H, 72 + lines.length * LH)};
+    const t = e.text.trim(), lines = t ? wrap(x, t, TW) : [e.audio ? 'Tik balso pastaba.' : 'Be pastabos.'];
+    return {e, i, lines, muted: !t, h: Math.max(PHOTO_H, 72 + (lines.length + (e.audio ? 1.6 : 0)) * LH)};
   });
   const pages = [[]];
   let y = M + HEAD;
@@ -645,33 +645,55 @@ async function renderPages() {
       x.fillStyle = '#6D6D72'; x.font = `24px ${FONT}`; x.fillText(it.e.time, TX + nw + 14, it.y + 32);
       x.fillStyle = it.muted ? '#8A8A8E' : '#000000'; x.font = `26px ${FONT}`;
       it.lines.forEach((l, n) => x.fillText(l, TX, it.y + 82 + n * LH));
+      if (it.e.audio) {
+        // the PDF viewer draws its attachment icon in the empty left part of this box
+        const box = {x: TX, y: it.y + 82 + it.lines.length * LH - 10, w: TW, h: 48};
+        x.fillStyle = '#EAF2FF'; x.beginPath(); x.roundRect ? x.roundRect(box.x, box.y, box.w, box.h, 10) : x.rect(box.x, box.y, box.w, box.h); x.fill();
+        x.fillStyle = '#0060DF'; x.font = `600 24px ${FONT}`;
+        x.fillText(`Balso pastaba · ${mmss(it.e.dur)}`, box.x + 48, box.y + 32);
+        it.box = box;
+      }
     }
     x.fillStyle = '#8A8A8E'; x.font = `22px ${FONT}`;
     x.fillText(`Apžiūra · ${st} · ${state.date}`, M, A4H - M + 30);
     x.textAlign = 'right'; x.fillText(`${p + 1} / ${pages.length}`, A4W - M, A4H - M + 30); x.textAlign = 'left';
-    out.push(await new Promise((ok, fail) => c.toBlob(b => b ? ok(b) : fail(new Error('toBlob')), 'image/jpeg', 0.8)));
+    const jpeg = await new Promise((ok, fail) => c.toBlob(b => b ? ok(b) : fail(new Error('toBlob')), 'image/jpeg', 0.8));
+    out.push({jpeg, audios: list.filter(it => it.e.audio).map(it => ({e: it.e, i: it.i, box: it.box}))});
   }
   return out;
 }
-// Minimal PDF: each page is one full-page JPEG, embedded as is (DCTDecode)
-async function makePdf(jpegs) {
-  const enc = new TextEncoder(), parts = [], offs = [];
-  let len = 0;
+// Minimal PDF: each page is one full-page JPEG, embedded as is (DCTDecode). Voice notes are embedded files,
+// listed as document attachments and clickable on the page; a viewer without attachment support still shows the page.
+async function makePdf(pages, base) {
+  const enc = new TextEncoder(), parts = [], offs = [], kids = [], names = [];
+  let len = 0, next = 3;
   const put = s => { const b = typeof s === 'string' ? enc.encode(s) : s; parts.push(b); len += b.length; };
   const obj = (n, ...body) => { offs[n] = len; put(`${n} 0 obj\n`); body.forEach(put); put('\nendobj\n'); };
-  const W = 595.28, H = 841.89, n = jpegs.length;
+  const W = 595.28, H = 841.89, k = W / A4W;
   put('%PDF-1.4\n'); put(new Uint8Array([37, 226, 227, 207, 211, 10]));
-  obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
-  obj(2, `<< /Type /Pages /Count ${n} /Kids [${jpegs.map((_, i) => `${3 + 3 * i} 0 R`).join(' ')}] >>`);
-  for (const [i, jpg] of jpegs.entries()) {
-    const p = 3 + 3 * i, bytes = new Uint8Array(await jpg.arrayBuffer()), cs = `q ${W} 0 0 ${H} 0 0 cm /Im0 Do Q`;
-    obj(p, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /XObject << /Im0 ${p + 2} 0 R >> >> /Contents ${p + 1} 0 R >>`);
-    obj(p + 1, `<< /Length ${cs.length} >>\nstream\n${cs}\nendstream`);
-    obj(p + 2, `<< /Type /XObject /Subtype /Image /Width ${A4W} /Height ${A4H} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${bytes.length} >>\nstream\n`, bytes, '\nendstream');
+  for (const pg of pages) {
+    const p = next++, c = next++, im = next++, annots = [], cs = `q ${W} 0 0 ${H} 0 0 cm /Im0 Do Q`;
+    for (const a of pg.audios) {
+      const ef = next++, fs = next++, an = next++, data = new Uint8Array(await a.e.audio.arrayBuffer());
+      const name = `${base}_${String(a.i + 1).padStart(2, '0')}_balsas.${ext(a.e.audio)}`;
+      const mime = (a.e.audio.type || 'audio/mp4').split(';')[0].replace('/', '#2F');
+      obj(ef, `<< /Type /EmbeddedFile /Subtype /${mime} /Params << /Size ${data.length} >> /Length ${data.length} >>\nstream\n`, data, '\nendstream');
+      obj(fs, `<< /Type /Filespec /F (${name}) /UF (${name}) /EF << /F ${ef} 0 R >> /Desc (Balso pastaba ${a.i + 1}) >>`);
+      const r = [a.box.x * k, H - (a.box.y + a.box.h) * k, (a.box.x + a.box.w) * k, H - a.box.y * k].map(v => v.toFixed(2)).join(' ');
+      obj(an, `<< /Type /Annot /Subtype /FileAttachment /Rect [${r}] /FS ${fs} 0 R /Name /Paperclip /Contents (Balso pastaba ${a.i + 1}) /F 4 >>`);
+      annots.push(`${an} 0 R`); names.push(`(${name}) ${fs} 0 R`);
+    }
+    const jpg = new Uint8Array(await pg.jpeg.arrayBuffer());
+    obj(p, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /XObject << /Im0 ${im} 0 R >> >> /Contents ${c} 0 R${annots.length ? ` /Annots [${annots.join(' ')}]` : ''} >>`);
+    obj(c, `<< /Length ${cs.length} >>\nstream\n${cs}\nendstream`);
+    obj(im, `<< /Type /XObject /Subtype /Image /Width ${A4W} /Height ${A4H} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpg.length} >>\nstream\n`, jpg, '\nendstream');
+    kids.push(`${p} 0 R`);
   }
-  const xref = len, size = 3 + 3 * n;
-  put(`xref\n0 ${size}\n0000000000 65535 f \n${offs.slice(1).map(o => String(o).padStart(10, '0') + ' 00000 n \n').join('')}`);
-  put(`trailer\n<< /Size ${size} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+  obj(1, `<< /Type /Catalog /Pages 2 0 R${names.length ? ` /Names << /EmbeddedFiles << /Names [${names.join(' ')}] >> >>` : ''} >>`);
+  obj(2, `<< /Type /Pages /Count ${kids.length} /Kids [${kids.join(' ')}] >>`);
+  const xref = len;
+  put(`xref\n0 ${next}\n0000000000 65535 f \n${offs.slice(1).map(o => String(o).padStart(10, '0') + ' 00000 n \n').join('')}`);
+  put(`trailer\n<< /Size ${next} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
   return new Blob(parts, {type: 'application/pdf'});
 }
 
@@ -682,7 +704,7 @@ $('#send').onclick = async () => {
   if (rec) rec.mr.stop();
   if (state.entries.some(e => e.tx === 'busy')) toast('Dar verčiu balsą į tekstą. Palauk kelias sekundes ir atidaryk laišką iš naujo.');
   const es = state.entries, st = state.station.trim() || 'Degalinė nenurodyta', times = es.map(e => e.time).sort();
-  const notes = es.map((e, i) => `${i + 1}. ${e.text.trim() || (e.audio ? 'Balso pastaba nepaversta tekstu' : 'Be pastabos')}`).join('\n');
+  const notes = es.map((e, i) => `${i + 1}. ${e.text.trim() || (e.audio ? 'Tik balso pastaba (PDF viduje)' : 'Be pastabos')}`).join('\n');
   $('#subj').value = `Apžiūra: ${st} · ${state.date}`;
   $('#body').value = `Degalinė: ${st}\nData: ${state.date}, ${times[0]}–${times.at(-1)}\n\nPastabos:\n${notes}\n\nNuotraukos su pastabomis yra PDF priede.`;
   const run = ++buildId;
@@ -692,13 +714,12 @@ $('#send').onclick = async () => {
   $('#share').disabled = true; $('#shared').hidden = true;
   show('#sheet'); $('#back').focus();
   try {
-    const jpegs = await renderPages(), pdf = await makePdf(jpegs);
-    if (run !== buildId) return;
     const base = `${ascii(state.station.trim())}_${state.date}`, name = `Apziura_${base}.pdf`;
-    const voice = es.filter(e => e.audio && !e.text.trim()).map(e => new File([e.audio],
-      `${base}_${String(es.indexOf(e) + 1).padStart(2, '0')}_balsas.${ext(e.audio)}`, {type: e.audio.type || 'audio/mp4'}));
-    doc = [new File([pdf], name, {type: 'application/pdf'}), ...voice];
-    pageUrls = jpegs.map(b => URL.createObjectURL(b));
+    const pages = await renderPages(), pdf = await makePdf(pages, base);
+    if (run !== buildId) return;
+    const voice = es.filter(e => e.audio).length;
+    doc = [new File([pdf], name, {type: 'application/pdf'})];
+    pageUrls = pages.map(pg => URL.createObjectURL(pg.jpeg));
     $('#pages').replaceChildren(...pageUrls.map((u, i) => {
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'page'; b.setAttribute('aria-label', `Atidaryti ${i + 1} puslapį`);
@@ -706,7 +727,7 @@ $('#send').onclick = async () => {
       b.onclick = () => view(u);
       return b;
     }));
-    $('#fsum').textContent = `${name} · ${jpegs.length} psl. · ${fmt(pdf.size)}` + (voice.length ? ` · dar ${voice.length} ${plural(voice.length, ['garso failas', 'garso failai', 'garso failų'])} be teksto` : '');
+    $('#fsum').textContent = `${name} · ${pages.length} psl. · ${fmt(pdf.size)}` + (voice ? ` · ${voice} ${plural(voice, VO)} PDF viduje` : '');
     $('#pdfBusy').hidden = true; $('#pages').hidden = false; $('#share').disabled = false;
   } catch {
     if (run === buildId) $('#pdfBusy').textContent = 'Nepavyko sukurti PDF. Grįžk atgal ir bandyk dar kartą.';
