@@ -311,6 +311,7 @@ textarea:focus{outline:2px solid var(--tint);outline-offset:0}
       <p class="note left">Raktas laikomas tik šiame telefone. Jis siunčiamas tik į OpenAI, kai balso pastabą reikia paversti tekstu.</p>
     </div>
     <div class="actions"><button id="keySave" class="btn primary" type="button">Išsaugoti</button></div>
+    <p class="note">Versija 2026-10-24.5</p>
   </div>
 </section>
 
@@ -464,39 +465,53 @@ function txLine(e, p) {
   else if (e.tx === 'error') { p.classList.add('err'); p.textContent = `Nepavyko paversti tekstu: ${e.txErr}.`; p.append(linkBtn('Bandyti dar kartą', () => transcribe(e))); }
 }
 
-// Voice notes
-let rec = null;
+// Voice notes. iOS home-screen apps can refuse the microphone after a stopped stream is requested again,
+// so one stream is kept for the whole visit and released only when the app closes.
+let rec = null, mic = null;
+async function getMic() {
+  if (mic && mic.getAudioTracks().some(t => t.readyState === 'live')) return mic;
+  mic = await navigator.mediaDevices.getUserMedia({audio: true});
+  return mic;
+}
+function dropMic() { mic?.getTracks().forEach(t => t.stop()); mic = null; }
+addEventListener('pagehide', () => { if (rec) rec.mr.stop(); dropMic(); });
 async function toggleRec(e) {
   if (rec) { rec.mr.stop(); return; }
   if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) return toast('Šioje naršyklėje balso įrašyti negalima.');
   let stream;
-  try { stream = await navigator.mediaDevices.getUserMedia({audio: true}); }
-  catch { return toast('Mikrofonas neleidžiamas. Leisk jį telefono nustatymuose ir bandyk dar kartą.'); }
+  try { stream = await getMic(); }
+  catch (err) {
+    return toast(err.name === 'NotAllowedError' ? 'Mikrofonas neleidžiamas. Leisk jį telefono nustatymuose ir bandyk dar kartą.'
+      : `Nepavyko įjungti mikrofono (${err.name}). Uždaryk programėlę ir atidaryk iš naujo.`);
+  }
   const type = ['audio/mp4', 'audio/webm'].find(t => MediaRecorder.isTypeSupported?.(t));
   let mr;
   try { mr = new MediaRecorder(stream, type ? {mimeType: type, audioBitsPerSecond: 48000} : {}); }
   catch { mr = new MediaRecorder(stream); }
-  const chunks = [], t0 = Date.now(), r = {e, mr, sec: 0};
+  const chunks = [], t0 = Date.now(), r = {e, mr, sec: 0}, tracks = stream.getAudioTracks();
   mr.ondataavailable = ev => { if (ev.data.size) chunks.push(ev.data); };
+  mr.onerror = ev => toast(`Įrašymo klaida (${ev.error?.name || 'nežinoma'}).`);
   mr.onstop = () => {
-    stream.getTracks().forEach(t => t.stop());
     clearInterval(r.timer); rec = null;
-    if (chunks.length && state.entries.includes(e)) {
+    tracks.forEach(t => { t.onended = null; });
+    if (!chunks.length) toast('Įrašas tuščias: mikrofonas nieko neperdavė. Bandyk dar kartą.');
+    else if (state.entries.includes(e)) {
       e.audio = new Blob(chunks, {type: mr.mimeType || type || 'audio/mp4'});
       e.dur = Math.max(1, Math.round((Date.now() - t0) / 1000));
       save(); transcribe(e);
     }
     render();
   };
+  tracks.forEach(t => { t.onended = () => { if (rec === r) { mr.stop(); dropMic(); toast('Telefonas išjungė mikrofoną, įrašas sustabdytas. Įrašyk dar kartą.'); } }; });
   r.timer = setInterval(() => {
     r.sec = Math.round((Date.now() - t0) / 1000);
     document.querySelectorAll(`[data-id="${e.id}"] .rec-time`).forEach(el => el.textContent = mmss(r.sec));
   }, 250);
   rec = r;
-  mr.start();
+  try { mr.start(); }
+  catch (err) { clearInterval(r.timer); rec = null; dropMic(); return toast(`Nepavyko pradėti įrašo (${err.name}). Bandyk dar kartą.`); }
   render();
 }
-document.addEventListener('visibilitychange', () => { if (document.hidden && rec) rec.mr.stop(); });
 
 const player = new Audio();
 let playing = null;
