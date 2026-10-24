@@ -44,14 +44,16 @@ body{
   padding-block:0 calc(96px + env(safe-area-inset-bottom,0px));
 }
 button,input,textarea{font:inherit;color:inherit}
-button{touch-action:manipulation;-webkit-tap-highlight-color:transparent;cursor:pointer}
+button,label{touch-action:manipulation;-webkit-tap-highlight-color:transparent;cursor:pointer}
 :focus-visible{outline:2px solid var(--tint);outline-offset:2px}
 .app{max-width:500px;margin-inline:auto}
 .vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip-path:inset(50%)}
 
-.hero{padding-block:20px 0}
+.hero{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding-block:20px 0}
 .hero h1{font-size:34px;line-height:1.15;font-weight:700;margin:0}
 .hero p{margin:2px 0 0;color:var(--label2);font-size:15px}
+.gear{width:44px;height:44px;flex:none;border-radius:50%;border:0;background:var(--fill);color:var(--tint);display:grid;place-items:center;margin-top:2px}
+.gear svg{width:22px;height:22px}
 
 .sec{margin-top:26px}
 .sec-h{
@@ -67,7 +69,7 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:transparent;cursor:
 ::placeholder{color:var(--label2);opacity:1}
 
 /* Photo log */
-.log{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.log,.step-body{list-style:none;margin:0;padding:0;display:grid;gap:12px}
 .shot{background:var(--card);border-radius:12px;padding:12px;display:grid;gap:10px}
 .shot-h{display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:12px;align-items:center}
 .thumb{width:76px;height:76px;border-radius:8px;object-fit:cover;display:block;background:var(--fill)}
@@ -95,6 +97,11 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:transparent;cursor:
 .play svg{width:18px;height:18px}
 .vinfo{font-size:15px;font-weight:600}
 .vinfo span{display:block;font-weight:400;font-size:13px;color:var(--label2);font-variant-numeric:tabular-nums}
+.tx{margin:0;font-size:15px;color:var(--label2);display:flex;align-items:center;gap:4px 8px;flex-wrap:wrap}
+.tx.err{color:var(--red)}
+.tx .link{min-height:32px;padding:4px 0}
+.spin{width:16px;height:16px;flex:none;border-radius:50%;border:2px solid var(--sep);border-top-color:var(--tint);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 textarea{
   display:block; width:100%; border:0; border-radius:10px; background:var(--fill);
   padding:12px; min-height:48px; resize:none; field-sizing:content;
@@ -105,7 +112,8 @@ textarea:focus{outline:2px solid var(--tint);outline-offset:0}
 .empty svg{width:44px;height:44px;color:var(--label2)}
 .empty b{font-size:20px;font-weight:600}
 .empty p{margin:0;color:var(--label2);font-size:15px;max-width:34ch}
-.reset{display:block;margin:20px auto 0}
+.more{display:flex;justify-content:center;gap:0 24px;flex-wrap:wrap;margin-top:16px}
+.more .link{display:inline-flex;align-items:center}
 
 /* Toolbar */
 .bar{
@@ -123,7 +131,7 @@ textarea:focus{outline:2px solid var(--tint);outline-offset:0}
 .primary{background:var(--tint);color:var(--tint-ink)}
 .secondary{background:var(--fill);color:var(--tint)}
 .btn:disabled{opacity:.4;cursor:default}
-#cam:focus-visible + label{outline:2px solid var(--tint);outline-offset:2px}
+#cam:focus-visible ~ .btn.primary{outline:2px solid var(--tint);outline-offset:2px}
 .badge{
   min-width:22px; height:22px; border-radius:11px; padding:0 6px; display:inline-grid; place-items:center;
   background:var(--tint); color:var(--tint-ink); font-size:13px; font-variant-numeric:tabular-nums;
@@ -135,16 +143,18 @@ textarea:focus{outline:2px solid var(--tint);outline-offset:0}
   background:var(--label); color:var(--bg); padding:12px 16px; border-radius:12px; font-size:15px;
 }
 
-/* Letter sheet */
+/* Sheets */
 .sheet{
   position:fixed; inset:0; z-index:20; background:var(--bg); overflow-y:auto;
   padding:env(safe-area-inset-top,0px) max(16px,env(safe-area-inset-right,0px)) calc(32px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
 }
+.sheet.with-bar{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 .nav{position:sticky;top:0;z-index:2;background:var(--bg);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;min-height:52px;margin-bottom:8px}
 .nav h2{margin:0;font-size:17px;font-weight:600}
 .back{justify-self:start;display:flex;align-items:center;gap:2px;padding-left:0;font-size:17px}
 .back svg{width:22px;height:22px}
 .field{display:grid;grid-template-columns:60px minmax(0,1fr);align-items:center;padding-left:16px;border-bottom:.5px solid var(--sep)}
+.field.wide{grid-template-columns:auto minmax(0,1fr);gap:12px;border-bottom:0}
 .field label{color:var(--label2);font-size:15px}
 .field input{border:0;background:none;padding:13px 16px 13px 0;width:100%}
 .field input:focus,.body-text:focus{outline:none}
@@ -159,16 +169,32 @@ textarea:focus{outline:2px solid var(--tint);outline-offset:0}
 .fsize{font-size:13px;color:var(--label2);font-variant-numeric:tabular-nums}
 .actions{display:grid;gap:10px;margin-top:24px}
 .note{font-size:13px;color:var(--label2);margin:10px 16px 0;text-align:center}
+.note.left{text-align:left}
 
-@media (prefers-reduced-motion: reduce){ .dot{animation:none} }
+/* Step sheet: one photo, its voice note and transcript, then the next photo */
+.step-body .shot{padding:0;background:none;gap:14px}
+.step-body .shot-h{grid-template-columns:minmax(0,1fr) auto;gap:6px 12px}
+.step-body .thumb{grid-column:1/-1;width:100%;height:auto;aspect-ratio:4/3;border-radius:12px}
+.step-body .t{display:none}
+.step-body .vbtn{min-height:64px;font-size:19px;border-radius:14px}
+.step-body .vbtn svg{width:24px;height:24px}
+.step-body .vrow,.step-body textarea{background:var(--card)}
+.step-body textarea{min-height:96px}
+
+@media (prefers-reduced-motion: reduce){ .dot,.spin{animation:none} }
 </style>
 </head>
 <body>
 
 <div id="main" class="app">
   <header class="hero">
-    <h1>Apžiūra</h1>
-    <p id="date"></p>
+    <div>
+      <h1>Apžiūra</h1>
+      <p id="date"></p>
+    </div>
+    <button id="gear" class="gear" type="button" aria-label="Nustatymai">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+    </button>
   </header>
 
   <section class="sec">
@@ -183,17 +209,22 @@ textarea:focus{outline:2px solid var(--tint);outline-offset:0}
     <div id="empty" class="empty">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/></svg>
       <b>Dar nėra nuotraukų</b>
-      <p>Nufotografuok vietą ir įkalbėk pastabą. Baigęs spausk „Laiškas“: visos nuotraukos ir pastabos bus sudėtos į vieną laišką.</p>
+      <p>Nufotografuok vietą ir iškart įkalbėk pastabą, tada spausk „Kita nuotrauka“. Baigęs spausk „Laiškas“.</p>
     </div>
     <ol id="log" class="log"></ol>
   </section>
 
-  <button id="reset" class="link danger reset" type="button" hidden>Pradėti naują apžiūrą</button>
+  <div class="more">
+    <input id="gal" class="vh" type="file" accept="image/*" multiple>
+    <label for="gal" class="link">Pridėti iš galerijos</label>
+    <button id="reset" class="link danger" type="button" hidden>Pradėti naują apžiūrą</button>
+  </div>
 </div>
+
+<input id="cam" class="vh" type="file" accept="image/*" capture="environment">
 
 <nav id="bar" class="bar" aria-label="Veiksmai">
   <div class="bar-in">
-    <input id="cam" class="vh" type="file" accept="image/*" capture="environment">
     <label for="cam" class="btn primary">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/></svg>
       Fotografuoti
@@ -206,6 +237,22 @@ textarea:focus{outline:2px solid var(--tint);outline-offset:0}
 </nav>
 
 <div id="toast" class="toast" role="status" hidden></div>
+
+<section id="step" class="sheet with-bar" aria-labelledby="stepTitle" hidden>
+  <div class="app">
+    <div class="nav"><span></span><h2 id="stepTitle">Nuotrauka</h2><span></span></div>
+    <ul id="stepCard" class="step-body"></ul>
+  </div>
+  <nav class="bar" aria-label="Kitas žingsnis">
+    <div class="bar-in">
+      <label for="cam" id="next" class="btn primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/></svg>
+        Kita nuotrauka
+      </label>
+      <button id="done" class="btn secondary" type="button">Baigti</button>
+    </div>
+  </nav>
+</section>
 
 <section id="sheet" class="sheet" aria-labelledby="sheetTitle" hidden>
   <div class="app">
@@ -237,6 +284,27 @@ textarea:focus{outline:2px solid var(--tint);outline-offset:0}
   </div>
 </section>
 
+<section id="settings" class="sheet" aria-labelledby="setTitle" hidden>
+  <div class="app">
+    <div class="nav">
+      <button id="setBack" class="link back" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+        Atgal
+      </button>
+      <h2 id="setTitle">Nustatymai</h2>
+      <span></span>
+    </div>
+    <div class="sec">
+      <div class="sec-h"><span>Balsas į tekstą</span></div>
+      <div class="group">
+        <div class="field wide"><label for="key">OpenAI raktas</label><input id="key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="sk-…"></div>
+      </div>
+      <p class="note left">Raktas laikomas tik šiame telefone. Jis siunčiamas tik į OpenAI, kai balso pastabą reikia paversti tekstu.</p>
+    </div>
+    <div class="actions"><button id="keySave" class="btn primary" type="button">Išsaugoti</button></div>
+  </div>
+</section>
+
 <template id="tpl">
   <li class="shot">
     <div class="shot-h">
@@ -245,7 +313,8 @@ textarea:focus{outline:2px solid var(--tint);outline-offset:0}
       <button type="button" class="link danger del">Ištrinti</button>
     </div>
     <div class="voice"></div>
-    <textarea rows="1" placeholder="Pastaba raštu (nebūtina)"></textarea>
+    <p class="tx" hidden></p>
+    <textarea rows="1" placeholder="Pastaba raštu"></textarea>
   </li>
 </template>
 
@@ -258,9 +327,10 @@ const fmt = b => b < 1048576 ? Math.max(1, Math.round(b / 1024)) + ' KB'
   : (b / 1048576).toLocaleString('lt-LT', {maximumFractionDigits: 1}) + ' MB';
 const mmss = s => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
 const today = () => new Date().toLocaleDateString('lt-LT');
-const clock = () => new Date().toLocaleTimeString('lt-LT', {hour: '2-digit', minute: '2-digit'});
+const clock = (t = Date.now()) => new Date(t).toLocaleTimeString('lt-LT', {hour: '2-digit', minute: '2-digit'});
 // File names stay ASCII so every mail client keeps them intact
 const ascii = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'degaline';
+const ext = b => b.type.includes('webm') ? 'webm' : 'm4a';
 const ICON = {
   mic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5"/></svg>',
   play: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>',
@@ -303,6 +373,21 @@ function twoTap(btn, idle, armed, act) {
     setTimeout(() => { delete btn.dataset.armed; btn.textContent = idle; }, 3000);
   };
 }
+const linkBtn = (label, fn) => Object.assign(document.createElement('button'), {type: 'button', className: 'link', textContent: label, onclick: fn});
+
+// Sheets: one open at a time over the main list
+let openSheet = null, prevSheet = null, cur = null;
+function show(id) {
+  if (openSheet) $(openSheet).hidden = true;
+  openSheet = id; $(id).hidden = false; $(id).scrollTop = 0;
+  $('#main').inert = $('#bar').inert = true;
+}
+function hide() {
+  if (openSheet) $(openSheet).hidden = true;
+  openSheet = null; cur = null;
+  $('#main').inert = $('#bar').inert = false;
+}
+function showStep(e) { cur = e; show('#step'); render(); }
 
 // Rendering
 function render() {
@@ -315,9 +400,15 @@ function render() {
   $('#reset').hidden = !n;
   $('#count').textContent = n; $('#count').hidden = !n;
   $('#send').disabled = !n;
-  $('#log').replaceChildren(...es.map(card));
+  $('#log').replaceChildren(...es.map((e, i) => card(e, i, 'n')));
+  if (cur && !es.includes(cur)) hide();
+  if (cur) {
+    const i = es.indexOf(cur);
+    $('#stepTitle').textContent = `Nuotrauka ${i + 1}`;
+    $('#stepCard').replaceChildren(card(cur, i, 's'));
+  }
 }
-function card(e, i) {
+function card(e, i, pre) {
   const li = $('#tpl').content.firstElementChild.cloneNode(true);
   li.dataset.id = e.id;
   const img = li.querySelector('.thumb');
@@ -325,7 +416,7 @@ function card(e, i) {
   li.querySelector('.t').textContent = `Nuotrauka ${i + 1}`;
   li.querySelector('.s').textContent = `${e.time} · ${e.orig ? fmt(e.orig) + ' → ' : ''}${fmt(e.size)}`;
   const ta = li.querySelector('textarea');
-  ta.id = 'n' + e.id; ta.setAttribute('aria-label', `Pastaba prie nuotraukos ${i + 1}`);
+  ta.id = pre + e.id; ta.setAttribute('aria-label', `Pastaba prie nuotraukos ${i + 1}`);
   ta.value = e.text;
   ta.oninput = () => { e.text = ta.value; save(); };
   twoTap(li.querySelector('.del'), 'Ištrinti', 'Tikrai?', () => {
@@ -334,6 +425,7 @@ function card(e, i) {
     state.entries.splice(state.entries.indexOf(e), 1); save(); render();
   });
   li.querySelector('.voice').replaceChildren(voice(e));
+  txLine(e, li.querySelector('.tx'));
   return li;
 }
 function voice(e) {
@@ -347,15 +439,21 @@ function voice(e) {
     play.onclick = () => togglePlay(e);
     twoTap(del, 'Ištrinti', 'Tikrai?', () => {
       if (playing === e) { player.pause(); playing = null; }
-      e.audio = null; e.dur = 0; save(); render();
+      e.audio = null; e.dur = 0; e.tx = null; save(); render();
     });
     return row;
   }
   const b = document.createElement('button'); b.type = 'button'; b.className = 'vbtn';
-  if (rec && rec.e === e) { b.classList.add('on'); b.innerHTML = `<span class="dot"></span>Stabdyti <span class="rec-time">${mmss(rec.sec)}</span>`; }
+  if (rec && rec.e === e) { b.classList.add('on'); b.innerHTML = `<span class="dot"></span>Baigti įrašą <span class="rec-time">${mmss(rec.sec)}</span>`; }
   else { b.innerHTML = ICON.mic + 'Įkalbėti pastabą'; b.disabled = !!rec; }
   b.onclick = () => toggleRec(e);
   return b;
+}
+function txLine(e, p) {
+  p.hidden = !e.tx || e.tx === 'done';
+  if (e.tx === 'busy') p.innerHTML = '<span class="spin"></span>Verčiu balsą į tekstą…';
+  else if (e.tx === 'nokey') { p.textContent = 'Balsui paversti tekstu reikia OpenAI rakto.'; p.append(linkBtn('Įvesti raktą', openSettings)); }
+  else if (e.tx === 'error') { p.classList.add('err'); p.textContent = `Nepavyko paversti tekstu: ${e.txErr}.`; p.append(linkBtn('Bandyti dar kartą', () => transcribe(e))); }
 }
 
 // Voice notes
@@ -378,17 +476,16 @@ async function toggleRec(e) {
     if (chunks.length && state.entries.includes(e)) {
       e.audio = new Blob(chunks, {type: mr.mimeType || type || 'audio/mp4'});
       e.dur = Math.max(1, Math.round((Date.now() - t0) / 1000));
-      save();
+      save(); transcribe(e);
     }
     render();
   };
   r.timer = setInterval(() => {
     r.sec = Math.round((Date.now() - t0) / 1000);
-    const el = document.querySelector(`[data-id="${e.id}"] .rec-time`);
-    if (el) el.textContent = mmss(r.sec);
+    document.querySelectorAll(`[data-id="${e.id}"] .rec-time`).forEach(el => el.textContent = mmss(r.sec));
   }, 250);
   rec = r;
-  mr.start(1000);
+  mr.start();
   render();
 }
 document.addEventListener('visibilitychange', () => { if (document.hidden && rec) rec.mr.stop(); });
@@ -405,7 +502,47 @@ function togglePlay(e) {
   render();
 }
 
-// Camera: longest side 1600 px, JPEG 75 %
+// Transcription: OpenAI, Lithuanian; the key lives only on this phone
+const KEY = 'apziura-openai-key';
+const getKey = () => { try { return localStorage.getItem(KEY) || ''; } catch { return ''; } };
+async function transcribe(e) {
+  if (!e.audio) return;
+  const key = getKey();
+  if (!key) { e.tx = 'nokey'; save(); render(); return; }
+  e.tx = 'busy'; render();
+  const fd = new FormData();
+  fd.append('file', new File([e.audio], 'pastaba.' + ext(e.audio), {type: e.audio.type || 'audio/mp4'}));
+  fd.append('model', 'gpt-4o-transcribe');
+  fd.append('language', 'lt');
+  fd.append('prompt', 'Degalinės apžiūra: kolonėlės, kainų stendas, parduotuvė, kasa, kava, plovykla, tualetas, aikštelė.');
+  try {
+    const r = await fetch('https://api.openai.com/v1/audio/transcriptions', {method: 'POST', headers: {Authorization: 'Bearer ' + key}, body: fd});
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(r.status === 401 ? 'neteisingas OpenAI raktas' : j.error?.message || 'klaida ' + r.status);
+    const said = (j.text || '').trim();
+    if (said) e.text = e.text.trim() ? e.text.trim() + '\n' + said : said;
+    e.tx = 'done';
+  } catch (err) {
+    e.tx = 'error';
+    e.txErr = err instanceof TypeError ? 'nėra ryšio su OpenAI' : err.message;
+  }
+  if (state.entries.includes(e)) { save(); render(); }
+}
+const retryAll = () => state.entries.filter(e => e.audio && (e.tx === 'nokey' || e.tx === 'error')).forEach(transcribe);
+addEventListener('online', retryAll);
+
+function openSettings() { prevSheet = openSheet; const keep = cur; show('#settings'); cur = keep; $('#key').value = getKey(); }
+$('#gear').onclick = openSettings;
+$('#setBack').onclick = () => { if (prevSheet) { show(prevSheet); render(); } else hide(); prevSheet = null; };
+$('#keySave').onclick = () => {
+  const k = $('#key').value.trim();
+  try { k ? localStorage.setItem(KEY, k) : localStorage.removeItem(KEY); }
+  catch { return toast('Nepavyko išsaugoti rakto šiame lange.'); }
+  toast(k ? 'Raktas išsaugotas.' : 'Raktas pašalintas.');
+  retryAll(); $('#setBack').click();
+};
+
+// Photos: longest side 1600 px, JPEG 75 %
 async function compress(file) {
   const src = URL.createObjectURL(file);
   try {
@@ -417,17 +554,28 @@ async function compress(file) {
     return await new Promise((ok, fail) => c.toBlob(b => b ? ok(b) : fail(new Error('toBlob')), 'image/jpeg', 0.75));
   } finally { URL.revokeObjectURL(src); }
 }
+async function addPhoto(file) {
+  const blob = await compress(file);
+  if (!state.entries.length) state.date = today();
+  const e = {id: ++seq, photo: blob, size: blob.size, orig: file.size, time: clock(file.lastModified || Date.now()), text: '', audio: null, dur: 0, tx: null};
+  state.entries.push(e);
+  return e;
+}
+$('#next').onclick = () => { if (rec) rec.mr.stop(); };
 $('#cam').onchange = async ev => {
   const file = ev.target.files[0]; ev.target.value = '';
   if (!file) return;
-  try {
-    const blob = await compress(file);
-    if (!state.entries.length) state.date = today();
-    state.entries.push({id: ++seq, photo: blob, size: blob.size, orig: file.size, time: clock(), text: '', audio: null, dur: 0});
-    save(); render();
-    $('#log').lastElementChild.scrollIntoView({block: 'center', behavior: reduce ? 'auto' : 'smooth'});
-  } catch { toast('Nepavyko atidaryti nuotraukos. Nufotografuok dar kartą.'); }
+  try { const e = await addPhoto(file); save(); showStep(e); }
+  catch { toast('Nepavyko atidaryti nuotraukos. Nufotografuok dar kartą.'); }
 };
+$('#gal').onchange = async ev => {
+  const files = [...ev.target.files]; ev.target.value = '';
+  let ok = 0;
+  for (const f of files) { try { await addPhoto(f); ok++; } catch {} }
+  save(); render();
+  if (files.length) toast(ok === files.length ? `Pridėta: ${ok} ${plural(ok, PH)}.` : `Pridėta ${ok} iš ${files.length}. Kitų nuotraukų nepavyko atidaryti.`);
+};
+$('#done').onclick = () => { if (rec) rec.mr.stop(); hide(); render(); };
 $('#station').oninput = ev => { state.station = ev.target.value; save(); };
 twoTap($('#reset'), 'Pradėti naują apžiūrą', 'Ištrinti viską ir pradėti iš naujo?', () => {
   if (rec) rec.mr.stop();
@@ -436,21 +584,21 @@ twoTap($('#reset'), 'Pradėti naują apžiūrą', 'Ištrinti viską ir pradėti 
   $('#station').value = ''; save(); render(); scrollTo(0, 0);
 });
 
-// Letter
+// Letter: transcripts go into the text; a voice file is attached only when it has no text
 let attached = [];
 function letter() {
   const st = state.station.trim() || 'Degalinė nenurodyta', base = `${ascii(state.station.trim())}_${state.date}`;
   const files = [], lines = [];
   state.entries.forEach((e, i) => {
-    const nn = String(i + 1).padStart(2, '0'), pn = `${base}_${nn}.jpg`;
+    const nn = String(i + 1).padStart(2, '0'), pn = `${base}_${nn}.jpg`, text = e.text.trim();
     files.push({file: new File([e.photo], pn, {type: 'image/jpeg'}), thumb: e.photo});
     let refs = `Nuotrauka: ${pn}`;
-    if (e.audio) {
-      const an = `${base}_${nn}_balsas.${e.audio.type.includes('webm') ? 'webm' : 'm4a'}`;
+    if (e.audio && !text) {
+      const an = `${base}_${nn}_balsas.${ext(e.audio)}`;
       files.push({file: new File([e.audio], an, {type: e.audio.type || 'audio/mp4'}), thumb: null});
       refs += ` · Balsas: ${an} (${mmss(e.dur)})`;
     }
-    lines.push(`${i + 1}. ${e.text.trim() || (e.audio ? 'Balso pastaba' : 'Be pastabos')}\n   ${refs}`);
+    lines.push(`${i + 1}. ${text || (e.audio ? 'Balso pastaba priede' : 'Be pastabos')}\n   ${refs}`);
   });
   return {
     subject: `Apžiūra: ${st} · ${state.date}`,
@@ -460,6 +608,7 @@ function letter() {
 }
 $('#send').onclick = () => {
   if (rec) rec.mr.stop();
+  if (state.entries.some(e => e.tx === 'busy')) toast('Dar verčiu balsą į tekstą. Palauk kelias sekundes ir atidaryk laišką iš naujo.');
   const L = letter(); attached = L.files;
   $('#subj').value = L.subject; $('#body').value = L.body;
   $('#files').replaceChildren(...L.files.map(({file, thumb}) => {
@@ -472,12 +621,9 @@ $('#send').onclick = () => {
   }));
   $('#fsum').textContent = `${L.files.length} · ${fmt(L.files.reduce((s, x) => s + x.file.size, 0))}`;
   $('#shared').hidden = true;
-  $('#main').inert = $('#bar').inert = true;
-  $('#sheet').hidden = false; $('#sheet').scrollTop = 0; $('#back').focus();
+  show('#sheet'); $('#back').focus();
 };
-$('#back').onclick = () => {
-  $('#sheet').hidden = true; $('#main').inert = $('#bar').inert = false; $('#send').focus();
-};
+$('#back').onclick = () => { hide(); $('#send').focus(); };
 $('#share').onclick = async () => {
   const data = {files: attached.map(x => x.file), title: $('#subj').value, text: $('#body').value};
   if (!navigator.canShare?.(data)) return toast('Šiame lange failų bendrinti negalima. Atidaryk programėlę iš telefono pradžios ekrano.');
@@ -496,6 +642,7 @@ $('#copy').onclick = async () => {
   } catch {}
   $('#station').value = state.station;
   render();
+  state.entries.filter(e => e.tx === 'busy').forEach(transcribe);
   navigator.storage?.persist?.().catch(() => {});
 })();
 </script>
