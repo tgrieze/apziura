@@ -296,7 +296,7 @@ textarea:focus{outline:2px solid var(--tint);outline-offset:0}
       <p class="note left">Raktas laikomas tik šiame telefone. Jis siunčiamas tik į OpenAI, kai balso pastabą reikia paversti tekstu.</p>
     </div>
     <div class="actions"><button id="keySave" class="btn primary" type="button">Išsaugoti</button></div>
-    <p class="note">Versija 2026-10-24.5</p>
+    <p class="note">Versija 2026-10-24.6</p>
   </div>
 </section>
 
@@ -337,26 +337,9 @@ let seq = 0;
 const urls = new Map();
 const urlOf = b => { if (!urls.has(b)) urls.set(b, URL.createObjectURL(b)); return urls.get(b); };
 
-// Everything is kept on the phone (IndexedDB), so a closed or reloaded app loses nothing
-const DB = new Promise((ok, fail) => {
-  try {
-    const r = indexedDB.open('apziura', 1);
-    r.onupgradeneeded = () => r.result.createObjectStore('kv');
-    r.onsuccess = () => ok(r.result); r.onerror = () => fail(r.error);
-  } catch (err) { fail(err); }
-});
-DB.catch(() => {});
-const store = (mode, fn) => DB.then(db => new Promise((ok, fail) => {
-  const t = db.transaction('kv', mode), req = fn(t.objectStore('kv'));
-  t.oncomplete = () => ok(req.result); t.onerror = () => fail(t.error);
-}));
-let saveT, warned = false;
-function save() {
-  clearTimeout(saveT);
-  saveT = setTimeout(() => store('readwrite', s => s.put(state, 'state')).catch(() => {
-    if (!warned) { warned = true; toast('Nepavyko išsaugoti telefone. Neuždaryk programėlės, kol neišsiųsi laiško.'); }
-  }), 300);
-}
+// An inspection lives only while the app is open; closing it starts clean (no archive yet).
+// Earlier versions kept inspections in IndexedDB, so that copy is removed.
+try { indexedDB.deleteDatabase('apziura'); } catch {}
 
 let tt;
 function toast(m) { const t = $('#toast'); t.textContent = m; t.hidden = false; clearTimeout(tt); tt = setTimeout(() => t.hidden = true, 4000); }
@@ -412,11 +395,11 @@ function card(e, i, pre) {
   const ta = li.querySelector('textarea');
   ta.id = pre + e.id; ta.setAttribute('aria-label', `Pastaba prie nuotraukos ${i + 1}`);
   ta.value = e.text;
-  ta.oninput = () => { e.text = ta.value; save(); };
+  ta.oninput = () => { e.text = ta.value; };
   twoTap(li.querySelector('.del'), 'Ištrinti', 'Tikrai?', () => {
     if (rec && rec.e === e) return;
     if (playing === e) { player.pause(); playing = null; }
-    state.entries.splice(state.entries.indexOf(e), 1); save(); render();
+    state.entries.splice(state.entries.indexOf(e), 1); render();
   });
   li.querySelector('.voice').replaceChildren(voice(e));
   txLine(e, li.querySelector('.tx'));
@@ -433,7 +416,7 @@ function voice(e) {
     play.onclick = () => togglePlay(e);
     twoTap(del, 'Ištrinti', 'Tikrai?', () => {
       if (playing === e) { player.pause(); playing = null; }
-      e.audio = null; e.dur = 0; e.tx = null; save(); render();
+      e.audio = null; e.dur = 0; e.tx = null; render();
     });
     return row;
   }
@@ -483,7 +466,7 @@ async function toggleRec(e) {
     else if (state.entries.includes(e)) {
       e.audio = new Blob(chunks, {type: mr.mimeType || type || 'audio/mp4'});
       e.dur = Math.max(1, Math.round((Date.now() - t0) / 1000));
-      save(); transcribe(e);
+      transcribe(e);
     }
     render();
   };
@@ -516,7 +499,7 @@ const getKey = () => { try { return localStorage.getItem(KEY) || ''; } catch { r
 async function transcribe(e) {
   if (!e.audio) return;
   const key = getKey();
-  if (!key) { e.tx = 'nokey'; save(); render(); return; }
+  if (!key) { e.tx = 'nokey'; render(); return; }
   e.tx = 'busy'; render();
   const fd = new FormData();
   fd.append('file', new File([e.audio], 'pastaba.' + ext(e.audio), {type: e.audio.type || 'audio/mp4'}));
@@ -534,7 +517,7 @@ async function transcribe(e) {
     e.tx = 'error';
     e.txErr = err instanceof TypeError ? 'nėra ryšio su OpenAI' : err.message;
   }
-  if (state.entries.includes(e)) { save(); render(); }
+  if (state.entries.includes(e)) { render(); }
 }
 const retryAll = () => state.entries.filter(e => e.audio && (e.tx === 'nokey' || e.tx === 'error')).forEach(transcribe);
 addEventListener('online', retryAll);
@@ -573,23 +556,23 @@ $('#next').onclick = () => { if (rec) rec.mr.stop(); };
 $('#cam').onchange = async ev => {
   const file = ev.target.files[0]; ev.target.value = '';
   if (!file) return;
-  try { const e = await addPhoto(file); save(); showStep(e); }
+  try { const e = await addPhoto(file); showStep(e); }
   catch { toast('Nepavyko atidaryti nuotraukos. Nufotografuok dar kartą.'); }
 };
 $('#gal').onchange = async ev => {
   const files = [...ev.target.files]; ev.target.value = '';
   let ok = 0;
   for (const f of files) { try { await addPhoto(f); ok++; } catch {} }
-  save(); render();
+  render();
   if (files.length) toast(ok === files.length ? `Pridėta: ${ok} ${plural(ok, PH)}.` : `Pridėta ${ok} iš ${files.length}. Kitų nuotraukų nepavyko atidaryti.`);
 };
 $('#done').onclick = () => { if (rec) rec.mr.stop(); hide(); render(); };
-$('#station').oninput = ev => { state.station = ev.target.value; save(); };
+$('#station').oninput = ev => { state.station = ev.target.value; };
 twoTap($('#reset'), 'Pradėti naują apžiūrą', 'Ištrinti viską ir pradėti iš naujo?', () => {
   if (rec) rec.mr.stop();
   player.pause(); playing = null;
   state = {station: '', date: today(), entries: []};
-  $('#station').value = ''; save(); render(); scrollTo(0, 0);
+  $('#station').value = ''; render(); scrollTo(0, 0);
 });
 
 // Letter: one PDF with every photo next to its note; a voice file is attached only when it has no text.
@@ -722,14 +705,5 @@ $('#share').onclick = async () => {
   catch (err) { if (err.name !== 'AbortError') toast('Nepavyko atidaryti bendrinimo lango.'); }
 };
 
-(async () => {
-  try {
-    const s = await store('readonly', s => s.get('state'));
-    if (s) { state = s; seq = Math.max(0, ...s.entries.map(e => e.id)); }
-  } catch {}
-  $('#station').value = state.station;
-  render();
-  state.entries.filter(e => e.tx === 'busy').forEach(transcribe);
-  navigator.storage?.persist?.().catch(() => {});
-})();
+render();
 </script>
