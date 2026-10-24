@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="lt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Apžiūra">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}img{max-width:100%}</style>
+<title>Degalinių apžiūra</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: iOS-style grouped list in one phone column; primary actions in a blurred toolbar at thumb height */
+:root{
+  --bg:#F2F2F7; --card:#FFFFFF; --label:#000000; --label2:#6D6D72; --sep:#C6C6C8; --fill:#EBEBF0;
+  --tint:#007AFF; --tint-ink:#FFFFFF; --red:#FF3B30; --red-ink:#FFFFFF; --bar:rgba(249,249,251,.86);
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#000000; --card:#1C1C1E; --label:#FFFFFF; --label2:#98989F; --sep:#38383A; --fill:#2C2C2E;
+    --tint:#0A84FF; --tint-ink:#FFFFFF; --red:#FF453A; --red-ink:#FFFFFF; --bar:rgba(22,22,24,.86);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#000000; --card:#1C1C1E; --label:#FFFFFF; --label2:#98989F; --sep:#38383A; --fill:#2C2C2E;
+  --tint:#0A84FF; --tint-ink:#FFFFFF; --red:#FF453A; --red-ink:#FFFFFF; --bar:rgba(22,22,24,.86);
+}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--bg)}
+body{
+  margin:0; color:var(--label); font:17px/1.35 var(--font);
+  -webkit-font-smoothing:antialiased; -webkit-text-size-adjust:100%;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:0 calc(96px + env(safe-area-inset-bottom,0px));
+}
+button,input,textarea{font:inherit;color:inherit}
+button{touch-action:manipulation;-webkit-tap-highlight-color:transparent;cursor:pointer}
+:focus-visible{outline:2px solid var(--tint);outline-offset:2px}
+.app{max-width:500px;margin-inline:auto}
+.vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip-path:inset(50%)}
+
+.hero{padding-block:20px 0}
+.hero h1{font-size:34px;line-height:1.15;font-weight:700;margin:0}
+.hero p{margin:2px 0 0;color:var(--label2);font-size:15px}
+
+.sec{margin-top:26px}
+.sec-h{
+  display:flex; justify-content:space-between; align-items:baseline; gap:8px; padding:0 16px 7px;
+  font-size:13px; line-height:1.3; color:var(--label2);
+}
+.sec-h span:first-child{text-transform:uppercase;letter-spacing:.03em}
+.sec-h span:last-child{font-variant-numeric:tabular-nums}
+.group{background:var(--card);border-radius:12px;overflow:hidden}
+.group:focus-within{box-shadow:0 0 0 2px var(--tint)}
+.station{display:block;width:100%;border:0;background:none;padding:13px 16px;min-height:48px}
+.station:focus{outline:none}
+::placeholder{color:var(--label2);opacity:1}
+
+/* Photo log */
+.log{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.shot{background:var(--card);border-radius:12px;padding:12px;display:grid;gap:10px}
+.shot-h{display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:12px;align-items:center}
+.thumb{width:76px;height:76px;border-radius:8px;object-fit:cover;display:block;background:var(--fill)}
+.t{font-weight:600}
+.s{font-size:13px;color:var(--label2);font-variant-numeric:tabular-nums;margin-top:2px}
+.link{background:none;border:0;padding:8px 4px;color:var(--tint);font-size:15px;min-height:44px}
+.link.danger{color:var(--red)}
+.link[data-armed]{font-weight:600}
+
+.vbtn{
+  width:100%; min-height:48px; border:0; border-radius:10px; background:var(--fill); color:var(--tint);
+  font-weight:600; display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.vbtn svg{width:20px;height:20px}
+.vbtn:disabled{opacity:.4;cursor:default}
+.vbtn.on{background:var(--red);color:var(--red-ink)}
+.rec-time{font-variant-numeric:tabular-nums}
+.dot{width:10px;height:10px;border-radius:50%;background:currentColor;animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.25}}
+.vrow{
+  display:grid; grid-template-columns:44px minmax(0,1fr) auto; gap:12px; align-items:center;
+  background:var(--fill); border-radius:10px; padding:4px 8px 4px 4px;
+}
+.play{width:44px;height:44px;border-radius:50%;border:0;background:var(--tint);color:var(--tint-ink);display:grid;place-items:center}
+.play svg{width:18px;height:18px}
+.vinfo{font-size:15px;font-weight:600}
+.vinfo span{display:block;font-weight:400;font-size:13px;color:var(--label2);font-variant-numeric:tabular-nums}
+textarea{
+  display:block; width:100%; border:0; border-radius:10px; background:var(--fill);
+  padding:12px; min-height:48px; resize:none; field-sizing:content;
+}
+textarea:focus{outline:2px solid var(--tint);outline-offset:0}
+
+.empty{background:var(--card);border-radius:12px;padding:32px 20px;text-align:center;display:grid;gap:8px;justify-items:center}
+.empty svg{width:44px;height:44px;color:var(--label2)}
+.empty b{font-size:20px;font-weight:600}
+.empty p{margin:0;color:var(--label2);font-size:15px;max-width:34ch}
+.reset{display:block;margin:20px auto 0}
+
+/* Toolbar */
+.bar{
+  position:fixed; left:0; right:0; bottom:0; z-index:5; background:var(--bar);
+  -webkit-backdrop-filter:saturate(180%) blur(20px); backdrop-filter:saturate(180%) blur(20px);
+  border-top:.5px solid var(--sep);
+  padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+}
+.bar-in{max-width:500px;margin-inline:auto;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{
+  min-height:50px; border-radius:14px; border:0; font-size:17px; font-weight:600;
+  display:flex; align-items:center; justify-content:center; gap:8px; padding:0 16px;
+}
+.btn svg{width:22px;height:22px;flex:none}
+.primary{background:var(--tint);color:var(--tint-ink)}
+.secondary{background:var(--fill);color:var(--tint)}
+.btn:disabled{opacity:.4;cursor:default}
+#cam:focus-visible + label{outline:2px solid var(--tint);outline-offset:2px}
+.badge{
+  min-width:22px; height:22px; border-radius:11px; padding:0 6px; display:inline-grid; place-items:center;
+  background:var(--tint); color:var(--tint-ink); font-size:13px; font-variant-numeric:tabular-nums;
+}
+.toast{
+  position:fixed; left:50%; transform:translateX(-50%); z-index:30;
+  bottom:calc(84px + env(safe-area-inset-bottom,0px));
+  width:max-content; max-width:min(460px,calc(100% - 32px));
+  background:var(--label); color:var(--bg); padding:12px 16px; border-radius:12px; font-size:15px;
+}
+
+/* Letter sheet */
+.sheet{
+  position:fixed; inset:0; z-index:20; background:var(--bg); overflow-y:auto;
+  padding:env(safe-area-inset-top,0px) max(16px,env(safe-area-inset-right,0px)) calc(32px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+}
+.nav{position:sticky;top:0;z-index:2;background:var(--bg);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;min-height:52px;margin-bottom:8px}
+.nav h2{margin:0;font-size:17px;font-weight:600}
+.back{justify-self:start;display:flex;align-items:center;gap:2px;padding-left:0;font-size:17px}
+.back svg{width:22px;height:22px}
+.field{display:grid;grid-template-columns:60px minmax(0,1fr);align-items:center;padding-left:16px;border-bottom:.5px solid var(--sep)}
+.field label{color:var(--label2);font-size:15px}
+.field input{border:0;background:none;padding:13px 16px 13px 0;width:100%}
+.field input:focus,.body-text:focus{outline:none}
+.body-text{background:none;border-radius:0;min-height:200px;padding:13px 16px}
+.files{list-style:none;margin:0;padding:0}
+.files li{display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;align-items:center;padding:8px 16px}
+.files li + li{border-top:.5px solid var(--sep)}
+.files img,.ficon{width:44px;height:44px;border-radius:6px;object-fit:cover;display:block;background:var(--fill)}
+.ficon{display:grid;place-items:center;color:var(--tint)}
+.ficon svg{width:22px;height:22px}
+.fname{font-size:15px;overflow-wrap:anywhere}
+.fsize{font-size:13px;color:var(--label2);font-variant-numeric:tabular-nums}
+.actions{display:grid;gap:10px;margin-top:24px}
+.note{font-size:13px;color:var(--label2);margin:10px 16px 0;text-align:center}
+
+@media (prefers-reduced-motion: reduce){ .dot{animation:none} }
+</style>
+</head>
+<body>
+
+<div id="main" class="app">
+  <header class="hero">
+    <h1>Apžiūra</h1>
+    <p id="date"></p>
+  </header>
+
+  <section class="sec">
+    <div class="sec-h"><span>Degalinė</span></div>
+    <div class="group">
+      <input id="station" class="station" type="text" placeholder="Pavadinimas arba adresas" autocomplete="off" enterkeyhint="done" aria-label="Degalinė">
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><span>Nuotraukos</span><span id="sum"></span></div>
+    <div id="empty" class="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/></svg>
+      <b>Dar nėra nuotraukų</b>
+      <p>Nufotografuok vietą ir įkalbėk pastabą. Baigęs spausk „Laiškas“: visos nuotraukos ir pastabos bus sudėtos į vieną laišką.</p>
+    </div>
+    <ol id="log" class="log"></ol>
+  </section>
+
+  <button id="reset" class="link danger reset" type="button" hidden>Pradėti naują apžiūrą</button>
+</div>
+
+<nav id="bar" class="bar" aria-label="Veiksmai">
+  <div class="bar-in">
+    <input id="cam" class="vh" type="file" accept="image/*" capture="environment">
+    <label for="cam" class="btn primary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/></svg>
+      Fotografuoti
+    </label>
+    <button id="send" class="btn secondary" type="button" disabled>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/></svg>
+      Laiškas <span id="count" class="badge" hidden>0</span>
+    </button>
+  </div>
+</nav>
+
+<div id="toast" class="toast" role="status" hidden></div>
+
+<section id="sheet" class="sheet" aria-labelledby="sheetTitle" hidden>
+  <div class="app">
+    <div class="nav">
+      <button id="back" class="link back" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+        Atgal
+      </button>
+      <h2 id="sheetTitle">Laiškas</h2>
+      <span></span>
+    </div>
+    <div class="group">
+      <div class="field"><label for="subj">Tema</label><input id="subj" type="text"></div>
+      <textarea id="body" class="body-text" aria-label="Laiško tekstas"></textarea>
+    </div>
+    <div class="sec">
+      <div class="sec-h"><span>Priedai</span><span id="fsum"></span></div>
+      <ul id="files" class="group files"></ul>
+    </div>
+    <div class="actions">
+      <button id="share" class="btn primary" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7.5 7.5L12 3l4.5 4.5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>
+        Bendrinti į Gmail
+      </button>
+      <button id="copy" class="btn secondary" type="button">Kopijuoti tekstą</button>
+    </div>
+    <p class="note">Atsidarys telefono bendrinimo langas. Jame pasirink Gmail.</p>
+    <p id="shared" class="note" role="status" hidden>Perduota. Kai laiškas Gmail paruoštas, sąrašo apačioje gali pradėti naują apžiūrą.</p>
+  </div>
+</section>
+
+<template id="tpl">
+  <li class="shot">
+    <div class="shot-h">
+      <img class="thumb" alt="">
+      <div><div class="t"></div><div class="s"></div></div>
+      <button type="button" class="link danger del">Ištrinti</button>
+    </div>
+    <div class="voice"></div>
+    <textarea rows="1" placeholder="Pastaba raštu (nebūtina)"></textarea>
+  </li>
+</template>
+
+<script>
+const $ = s => document.querySelector(s);
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const plural = (n, f) => { const t = n % 10, h = n % 100; return f[t === 1 && h !== 11 ? 0 : t >= 2 && (h < 10 || h >= 20) ? 1 : 2]; };
+const PH = ['nuotrauka', 'nuotraukos', 'nuotraukų'], VO = ['balso pastaba', 'balso pastabos', 'balso pastabų'];
+const fmt = b => b < 1048576 ? Math.max(1, Math.round(b / 1024)) + ' KB'
+  : (b / 1048576).toLocaleString('lt-LT', {maximumFractionDigits: 1}) + ' MB';
+const mmss = s => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+const today = () => new Date().toLocaleDateString('lt-LT');
+const clock = () => new Date().toLocaleTimeString('lt-LT', {hour: '2-digit', minute: '2-digit'});
+// File names stay ASCII so every mail client keeps them intact
+const ascii = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'degaline';
+const ICON = {
+  mic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5"/></svg>',
+  play: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>',
+  pause: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6.5" y="5" width="4" height="14" rx="1"/><rect x="13.5" y="5" width="4" height="14" rx="1"/></svg>',
+  wave: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2"/></svg>',
+};
+
+let state = {station: '', date: today(), entries: []};
+let seq = 0;
+const urls = new Map();
+const urlOf = b => { if (!urls.has(b)) urls.set(b, URL.createObjectURL(b)); return urls.get(b); };
+
+// Everything is kept on the phone (IndexedDB), so a closed or reloaded app loses nothing
+const DB = new Promise((ok, fail) => {
+  try {
+    const r = indexedDB.open('apziura', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('kv');
+    r.onsuccess = () => ok(r.result); r.onerror = () => fail(r.error);
+  } catch (err) { fail(err); }
+});
+DB.catch(() => {});
+const store = (mode, fn) => DB.then(db => new Promise((ok, fail) => {
+  const t = db.transaction('kv', mode), req = fn(t.objectStore('kv'));
+  t.oncomplete = () => ok(req.result); t.onerror = () => fail(t.error);
+}));
+let saveT, warned = false;
+function save() {
+  clearTimeout(saveT);
+  saveT = setTimeout(() => store('readwrite', s => s.put(state, 'state')).catch(() => {
+    if (!warned) { warned = true; toast('Nepavyko išsaugoti telefone. Neuždaryk programėlės, kol neišsiųsi laiško.'); }
+  }), 300);
+}
+
+let tt;
+function toast(m) { const t = $('#toast'); t.textContent = m; t.hidden = false; clearTimeout(tt); tt = setTimeout(() => t.hidden = true, 4000); }
+function twoTap(btn, idle, armed, act) {
+  btn.onclick = () => {
+    if (btn.dataset.armed) return act();
+    btn.dataset.armed = '1'; btn.textContent = armed;
+    setTimeout(() => { delete btn.dataset.armed; btn.textContent = idle; }, 3000);
+  };
+}
+
+// Rendering
+function render() {
+  const es = state.entries, n = es.length, v = es.filter(e => e.audio).length;
+  const size = es.reduce((s, e) => s + e.size + (e.audio ? e.audio.size : 0), 0);
+  const [y, m, d] = state.date.split('-');
+  $('#date').textContent = new Date(y, m - 1, d).toLocaleDateString('lt-LT', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'});
+  $('#sum').textContent = n ? `${n} ${plural(n, PH)}${v ? ` · ${v} ${plural(v, VO)}` : ''} · ${fmt(size)}` : '';
+  $('#empty').hidden = n > 0;
+  $('#reset').hidden = !n;
+  $('#count').textContent = n; $('#count').hidden = !n;
+  $('#send').disabled = !n;
+  $('#log').replaceChildren(...es.map(card));
+}
+function card(e, i) {
+  const li = $('#tpl').content.firstElementChild.cloneNode(true);
+  li.dataset.id = e.id;
+  const img = li.querySelector('.thumb');
+  img.src = urlOf(e.photo); img.alt = `Nuotrauka ${i + 1}`;
+  li.querySelector('.t').textContent = `Nuotrauka ${i + 1}`;
+  li.querySelector('.s').textContent = `${e.time} · ${e.orig ? fmt(e.orig) + ' → ' : ''}${fmt(e.size)}`;
+  const ta = li.querySelector('textarea');
+  ta.id = 'n' + e.id; ta.setAttribute('aria-label', `Pastaba prie nuotraukos ${i + 1}`);
+  ta.value = e.text;
+  ta.oninput = () => { e.text = ta.value; save(); };
+  twoTap(li.querySelector('.del'), 'Ištrinti', 'Tikrai?', () => {
+    if (rec && rec.e === e) return;
+    if (playing === e) { player.pause(); playing = null; }
+    state.entries.splice(state.entries.indexOf(e), 1); save(); render();
+  });
+  li.querySelector('.voice').replaceChildren(voice(e));
+  return li;
+}
+function voice(e) {
+  if (e.audio) {
+    const row = document.createElement('div'); row.className = 'vrow';
+    row.innerHTML = '<button type="button" class="play"></button><div class="vinfo">Balso pastaba<span></span></div><button type="button" class="link danger">Ištrinti</button>';
+    const [play, info, del] = row.children, on = playing === e;
+    play.innerHTML = on ? ICON.pause : ICON.play;
+    play.setAttribute('aria-label', on ? 'Sustabdyti' : 'Klausyti');
+    info.querySelector('span').textContent = `${mmss(e.dur)} · ${fmt(e.audio.size)}`;
+    play.onclick = () => togglePlay(e);
+    twoTap(del, 'Ištrinti', 'Tikrai?', () => {
+      if (playing === e) { player.pause(); playing = null; }
+      e.audio = null; e.dur = 0; save(); render();
+    });
+    return row;
+  }
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'vbtn';
+  if (rec && rec.e === e) { b.classList.add('on'); b.innerHTML = `<span class="dot"></span>Stabdyti <span class="rec-time">${mmss(rec.sec)}</span>`; }
+  else { b.innerHTML = ICON.mic + 'Įkalbėti pastabą'; b.disabled = !!rec; }
+  b.onclick = () => toggleRec(e);
+  return b;
+}
+
+// Voice notes
+let rec = null;
+async function toggleRec(e) {
+  if (rec) { rec.mr.stop(); return; }
+  if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) return toast('Šioje naršyklėje balso įrašyti negalima.');
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({audio: true}); }
+  catch { return toast('Mikrofonas neleidžiamas. Leisk jį telefono nustatymuose ir bandyk dar kartą.'); }
+  const type = ['audio/mp4', 'audio/webm'].find(t => MediaRecorder.isTypeSupported?.(t));
+  let mr;
+  try { mr = new MediaRecorder(stream, type ? {mimeType: type, audioBitsPerSecond: 48000} : {}); }
+  catch { mr = new MediaRecorder(stream); }
+  const chunks = [], t0 = Date.now(), r = {e, mr, sec: 0};
+  mr.ondataavailable = ev => { if (ev.data.size) chunks.push(ev.data); };
+  mr.onstop = () => {
+    stream.getTracks().forEach(t => t.stop());
+    clearInterval(r.timer); rec = null;
+    if (chunks.length && state.entries.includes(e)) {
+      e.audio = new Blob(chunks, {type: mr.mimeType || type || 'audio/mp4'});
+      e.dur = Math.max(1, Math.round((Date.now() - t0) / 1000));
+      save();
+    }
+    render();
+  };
+  r.timer = setInterval(() => {
+    r.sec = Math.round((Date.now() - t0) / 1000);
+    const el = document.querySelector(`[data-id="${e.id}"] .rec-time`);
+    if (el) el.textContent = mmss(r.sec);
+  }, 250);
+  rec = r;
+  mr.start(1000);
+  render();
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden && rec) rec.mr.stop(); });
+
+const player = new Audio();
+let playing = null;
+player.onended = () => { playing = null; render(); };
+function togglePlay(e) {
+  if (playing === e) { player.pause(); playing = null; }
+  else {
+    player.src = urlOf(e.audio); playing = e;
+    player.play().catch(() => { playing = null; render(); toast('Nepavyko paleisti įrašo.'); });
+  }
+  render();
+}
+
+// Camera: longest side 1600 px, JPEG 75 %
+async function compress(file) {
+  const src = URL.createObjectURL(file);
+  try {
+    const img = new Image(); img.src = src; await img.decode();
+    const k = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    return await new Promise((ok, fail) => c.toBlob(b => b ? ok(b) : fail(new Error('toBlob')), 'image/jpeg', 0.75));
+  } finally { URL.revokeObjectURL(src); }
+}
+$('#cam').onchange = async ev => {
+  const file = ev.target.files[0]; ev.target.value = '';
+  if (!file) return;
+  try {
+    const blob = await compress(file);
+    if (!state.entries.length) state.date = today();
+    state.entries.push({id: ++seq, photo: blob, size: blob.size, orig: file.size, time: clock(), text: '', audio: null, dur: 0});
+    save(); render();
+    $('#log').lastElementChild.scrollIntoView({block: 'center', behavior: reduce ? 'auto' : 'smooth'});
+  } catch { toast('Nepavyko atidaryti nuotraukos. Nufotografuok dar kartą.'); }
+};
+$('#station').oninput = ev => { state.station = ev.target.value; save(); };
+twoTap($('#reset'), 'Pradėti naują apžiūrą', 'Ištrinti viską ir pradėti iš naujo?', () => {
+  if (rec) rec.mr.stop();
+  player.pause(); playing = null;
+  state = {station: '', date: today(), entries: []};
+  $('#station').value = ''; save(); render(); scrollTo(0, 0);
+});
+
+// Letter
+let attached = [];
+function letter() {
+  const st = state.station.trim() || 'Degalinė nenurodyta', base = `${ascii(state.station.trim())}_${state.date}`;
+  const files = [], lines = [];
+  state.entries.forEach((e, i) => {
+    const nn = String(i + 1).padStart(2, '0'), pn = `${base}_${nn}.jpg`;
+    files.push({file: new File([e.photo], pn, {type: 'image/jpeg'}), thumb: e.photo});
+    let refs = `Nuotrauka: ${pn}`;
+    if (e.audio) {
+      const an = `${base}_${nn}_balsas.${e.audio.type.includes('webm') ? 'webm' : 'm4a'}`;
+      files.push({file: new File([e.audio], an, {type: e.audio.type || 'audio/mp4'}), thumb: null});
+      refs += ` · Balsas: ${an} (${mmss(e.dur)})`;
+    }
+    lines.push(`${i + 1}. ${e.text.trim() || (e.audio ? 'Balso pastaba' : 'Be pastabos')}\n   ${refs}`);
+  });
+  return {
+    subject: `Apžiūra: ${st} · ${state.date}`,
+    body: `Degalinė: ${st}\nData: ${state.date}, ${state.entries[0].time}\n\n${lines.join('\n\n')}`,
+    files,
+  };
+}
+$('#send').onclick = () => {
+  if (rec) rec.mr.stop();
+  const L = letter(); attached = L.files;
+  $('#subj').value = L.subject; $('#body').value = L.body;
+  $('#files').replaceChildren(...L.files.map(({file, thumb}) => {
+    const li = document.createElement('li');
+    const icon = thumb ? Object.assign(document.createElement('img'), {src: urlOf(thumb), alt: ''}) : Object.assign(document.createElement('div'), {className: 'ficon', innerHTML: ICON.wave});
+    const txt = document.createElement('div');
+    txt.innerHTML = '<div class="fname"></div><div class="fsize"></div>';
+    txt.firstChild.textContent = file.name; txt.lastChild.textContent = fmt(file.size);
+    li.append(icon, txt); return li;
+  }));
+  $('#fsum').textContent = `${L.files.length} · ${fmt(L.files.reduce((s, x) => s + x.file.size, 0))}`;
+  $('#shared').hidden = true;
+  $('#main').inert = $('#bar').inert = true;
+  $('#sheet').hidden = false; $('#sheet').scrollTop = 0; $('#back').focus();
+};
+$('#back').onclick = () => {
+  $('#sheet').hidden = true; $('#main').inert = $('#bar').inert = false; $('#send').focus();
+};
+$('#share').onclick = async () => {
+  const data = {files: attached.map(x => x.file), title: $('#subj').value, text: $('#body').value};
+  if (!navigator.canShare?.(data)) return toast('Šiame lange failų bendrinti negalima. Atidaryk programėlę iš telefono pradžios ekrano.');
+  try { await navigator.share(data); $('#shared').hidden = false; }
+  catch (err) { if (err.name !== 'AbortError') toast('Nepavyko atidaryti bendrinimo lango.'); }
+};
+$('#copy').onclick = async () => {
+  try { await navigator.clipboard.writeText(`${$('#subj').value}\n\n${$('#body').value}`); toast('Tekstas nukopijuotas.'); }
+  catch { toast('Nepavyko nukopijuoti. Pažymėk tekstą ir kopijuok ranka.'); }
+};
+
+(async () => {
+  try {
+    const s = await store('readonly', s => s.get('state'));
+    if (s) { state = s; seq = Math.max(0, ...s.entries.map(e => e.id)); }
+  } catch {}
+  $('#station').value = state.station;
+  render();
+  navigator.storage?.persist?.().catch(() => {});
+})();
+</script>
+</body>
+</html>
