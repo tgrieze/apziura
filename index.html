@@ -403,10 +403,6 @@ mark{background:none;color:var(--tint);font-weight:700}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3L10 14M21 3l-7 18-4-7-7-4z"/></svg>
         <span id="sendLbl">Siųsti laišką</span>
       </button>
-      <button id="share" class="btn secondary" type="button" disabled>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7.5 7.5L12 3l4.5 4.5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>
-        Bendrinti per telefoną
-      </button>
     </div>
     <p id="sendNote" class="note"></p>
   </div>
@@ -439,7 +435,7 @@ mark{background:none;color:var(--tint);font-weight:700}
       <p class="note left">Raktas laikomas tik šiame telefone. Jis siunčiamas tik į OpenAI, kai balso pastabą reikia paversti tekstu.</p>
       <div class="actions"><button id="keySave" class="btn primary" type="button">Išsaugoti raktą</button></div>
     </div>
-    <p class="note">Versija 2026-10-25.2</p>
+    <p class="note">Versija 2026-10-25.3</p>
   </div>
 </section>
 
@@ -862,7 +858,7 @@ function openSettings() {
   $('#key').value = getKey(); $('#listLink').value = ''; showCfg();
 }
 $('#gear').onclick = openSettings;
-$('#setBack').onclick = () => { if (prevSheet) { show(prevSheet); render(); } else { hide(); renderHome(); } prevSheet = null; };
+$('#setBack').onclick = () => { if (prevSheet) { show(prevSheet); render(); sendUi(); } else { hide(); renderHome(); } prevSheet = null; };
 $('#keySave').onclick = () => {
   const k = $('#key').value.trim();
   try { k ? localStorage.setItem(KEY, k) : localStorage.removeItem(KEY); }
@@ -1036,11 +1032,7 @@ async function openLetter(v) {
   doc = null; pageUrls.forEach(u => URL.revokeObjectURL(u)); pageUrls = [];
   $('#pages').replaceChildren(); $('#pages').hidden = true; $('#fsum').textContent = '';
   $('#pdfBusy').innerHTML = '<span class="spin"></span>Kuriu PDF dokumentą…'; $('#pdfBusy').hidden = false;
-  const hook = getCfg(HOOK);
-  $('#sendMail').hidden = !hook; $('#share').hidden = !!hook;
-  $('#sendMail').disabled = $('#share').disabled = true;
-  $('#sendNote').textContent = hook ? `Laiškas su PDF iškart išeis${getCfg(TO) ? ' adresu ' + getCfg(TO) : ''}.`
-    : 'Tiesioginis siuntimas nenustatytas: įkelk nuorodą nustatymuose. Kol kas gali bendrinti per telefoną.';
+  $('#sendMail').disabled = true; sendUi();
   show('#sheet'); $('#back').focus();
   try {
     const base = `${ascii(st)}_${v.date}`;
@@ -1072,21 +1064,19 @@ async function openLetter(v) {
       return b;
     }));
     $('#fsum').textContent = `${name} · ${pages.length} psl. · ${fmt(total)}` + (voiced ? ` · ${voiced} ${plural(voiced, VO)} PDF viduje` : '');
-    $('#pdfBusy').hidden = true; $('#pages').hidden = false; $('#sendMail').disabled = $('#share').disabled = false;
+    $('#pdfBusy').hidden = true; $('#pages').hidden = false; $('#sendMail').disabled = false;
   } catch {
     if (run === buildId) $('#pdfBusy').textContent = 'Nepavyko sukurti PDF. Grįžk atgal ir bandyk dar kartą.';
   }
 }
 $('#send').onclick = () => { if (rec) rec.mr.stop(); openLetter(state); };
 $('#back').onclick = () => { buildId++; if (letterFrom) show(letterFrom); else hide(); };
-$('#share').onclick = async () => {
-  const data = {files: doc, title: $('#subj').value, text: $('#body').value};
-  if (!doc || !navigator.canShare?.(data)) return toast('Šiame lange failų bendrinti negalima. Atidaryk programėlę iš telefono pradžios ekrano.');
-  try {
-    await navigator.share(data);
-    finish(letterVisit, 'share'); toast('Vizitas išsaugotas istorijoje.');
-  } catch (err) { if (err.name !== 'AbortError') toast('Nepavyko atidaryti bendrinimo lango.'); }
-};
+function sendUi() {
+  const hook = getCfg(HOOK);
+  $('#sendLbl').textContent = hook ? 'Siųsti laišką' : 'Nustatyti siuntimą';
+  $('#sendNote').textContent = hook ? `Laiškas su PDF iškart išeis${getCfg(TO) ? ' adresu ' + getCfg(TO) : ''}.`
+    : 'Šiame telefone siuntimas dar nenustatytas. Spausk mygtuką ir įklijuok nuorodą su nustatymais.';
+}
 function finish(v, by) {
   v.sent = Date.now(); v.sentBy = by; v.open = false; putVisit(v);
   if (v === state) state = null;
@@ -1095,7 +1085,8 @@ function finish(v, by) {
 // Direct send: each PDF goes to the Make webhook, which mails it from Tomas's Gmail to a fixed address
 $('#sendMail').onclick = async () => {
   const hook = getCfg(HOOK), btn = $('#sendMail'), lbl = $('#sendLbl');
-  if (!hook || !doc) return;
+  if (!hook) return openSettings();
+  if (!doc) return;
   const subj = $('#subj').value, html = '<p>' + esc($('#body').value).replace(/\n/g, '<br>') + '</p>';
   btn.disabled = true;
   let sent = 0;
