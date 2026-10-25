@@ -1,10 +1,11 @@
-<title>Degalinių apžiūra</title>
+<title>Vizitavimas</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
 /* Layout: iOS-style grouped list in one phone column; primary actions in a blurred toolbar at thumb height */
 :root{
   --bg:#F2F2F7; --card:#FFFFFF; --label:#000000; --label2:#6D6D72; --sep:#C6C6C8; --fill:#EBEBF0;
   --tint:#007AFF; --tint-ink:#FFFFFF; --red:#FF3B30; --red-ink:#FFFFFF; --bar:rgba(249,249,251,.86);
+  --ok:#1E8E3E; --ok-bg:#E3F4E7; --warn:#B25E00; --warn-bg:#FFF1DC;
   --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",system-ui,sans-serif;
 }
 @media (prefers-color-scheme: dark){
@@ -12,12 +13,14 @@
     color-scheme:dark;
     --bg:#000000; --card:#1C1C1E; --label:#FFFFFF; --label2:#98989F; --sep:#38383A; --fill:#2C2C2E;
     --tint:#0A84FF; --tint-ink:#FFFFFF; --red:#FF453A; --red-ink:#FFFFFF; --bar:rgba(22,22,24,.86);
+    --ok:#4CD07A; --ok-bg:#16301F; --warn:#FFB454; --warn-bg:#3A2A12;
   }
 }
 :root[data-theme="dark"]{
   color-scheme:dark;
   --bg:#000000; --card:#1C1C1E; --label:#FFFFFF; --label2:#98989F; --sep:#38383A; --fill:#2C2C2E;
   --tint:#0A84FF; --tint-ink:#FFFFFF; --red:#FF453A; --red-ink:#FFFFFF; --bar:rgba(22,22,24,.86);
+    --ok:#4CD07A; --ok-bg:#16301F; --warn:#FFB454; --warn-bg:#3A2A12;
 }
 
 *{box-sizing:border-box}
@@ -173,24 +176,101 @@ textarea:focus{outline:2px solid var(--tint);outline-offset:0}
 .step-body textarea{min-height:96px}
 
 @media (prefers-reduced-motion: reduce){ .dot,.spin{animation:none} }
+
+/* v2: home, station picker, history */
+.wide{width:100%}
+.newv{margin-top:18px;min-height:56px;font-size:18px}
+.resume{
+  background:var(--card); border-radius:12px; padding:12px 14px; margin-top:14px; box-shadow:inset 3px 0 0 var(--warn);
+  display:grid; grid-template-columns:minmax(0,1fr) auto; gap:4px 12px; align-items:center;
+}
+.resume .t{font-weight:600}
+.resume .d{font-size:13px;color:var(--label2)}
+.resume .go{border:0;border-radius:10px;background:var(--tint);color:var(--tint-ink);font-weight:600;padding:0 16px;min-height:40px}
+.search{display:flex;align-items:center;gap:8px;background:var(--fill);border-radius:10px;padding:0 10px}
+.search svg{width:18px;height:18px;color:var(--label2);flex:none}
+.search input{border:0;background:none;padding:11px 0;width:100%;min-width:0}
+.search input:focus{outline:none}
+.search:focus-within{box-shadow:0 0 0 2px var(--tint)}
+.rows{list-style:none;margin:10px 0 0;padding:0}
+.rows li + li{border-top:.5px solid var(--sep)}
+.row{
+  display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; align-items:center; width:100%; min-height:56px;
+  padding:11px 14px; border:0; background:none; text-align:left;
+}
+.row .t{font-weight:600}
+.row .d{font-size:13px;color:var(--label2);margin-top:1px;font-variant-numeric:tabular-nums}
+.st{grid-template-columns:56px minmax(0,1fr) auto}
+.st .n{font-weight:700;font-variant-numeric:tabular-nums}
+.st .a small{display:block;font-size:13px;color:var(--label2)}
+mark{background:none;color:var(--tint);font-weight:700}
+.chip{font-size:12px;font-weight:600;border-radius:999px;padding:3px 8px;white-space:nowrap}
+.chip.ok{background:var(--ok-bg);color:var(--ok)}
+.chip.warn{background:var(--warn-bg);color:var(--warn)}
+.navh{padding-block:8px 0}
+.stbtn{
+  display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:8px; width:100%; min-height:56px;
+  border:0; background:var(--card); border-radius:12px; padding:12px 16px; text-align:left;
+}
+.stbtn .t,.stbtn .d{display:block}
+.stbtn .t{font-weight:600}
+.stbtn .d{font-size:13px;color:var(--label2)}
+.stbtn .chev{color:var(--tint);font-size:15px}
+.dt{font-size:24px;line-height:1.2;font-weight:700;margin:4px 0 0;text-wrap:balance}
+.dd{color:var(--label2);margin:4px 0 14px;font-size:15px;font-variant-numeric:tabular-nums}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.tiles button{padding:0;border:0;background:none;border-radius:8px;overflow:hidden}
+.tiles img{width:100%;max-width:100%;aspect-ratio:1;object-fit:cover;display:block}
+.notes{list-style:none;margin:0;padding:0}
+.notes li{padding:10px 14px;font-size:15px;display:grid;grid-template-columns:26px minmax(0,1fr);gap:6px}
+.notes li + li{border-top:.5px solid var(--sep)}
+.notes b{font-variant-numeric:tabular-nums}
+.notes .m{color:var(--label2)}
 </style>
 
-<div id="main" class="app">
+<div id="home" class="app">
   <header class="hero">
     <div>
-      <h1>Apžiūra</h1>
-      <p id="date"></p>
+      <h1>Vizitavimas</h1>
+      <p id="hdate"></p>
     </div>
     <button id="gear" class="gear" type="button" aria-label="Nustatymai">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
     </button>
   </header>
+  <button id="newVisit" class="btn primary wide newv" type="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+    Naujas vizitas
+  </button>
+  <div id="resume" class="resume" hidden>
+    <div><div class="t">Nebaigtas vizitas</div><div id="resumeD" class="d"></div></div>
+    <button id="resumeGo" class="go" type="button">Tęsti</button>
+  </div>
+  <p id="noList" class="note left" hidden>Degalinių sąrašas neįkeltas, todėl paieška pagal numerį neveiks. Įkelk jį nustatymuose.</p>
+  <section class="sec">
+    <div class="sec-h"><span>Istorija</span><span id="hcount"></span></div>
+    <label class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+      <input id="histQ" type="search" placeholder="Filtruoti: numeris arba miestas" autocomplete="off" aria-label="Filtruoti istoriją">
+    </label>
+    <ul id="hist" class="group rows"></ul>
+    <p id="histEmpty" class="empty" hidden></p>
+  </section>
+</div>
 
+<div id="main" class="app" hidden>
+  <div class="navh">
+    <button id="toHome" class="link back" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+      Pradžia
+    </button>
+  </div>
   <section class="sec">
     <div class="sec-h"><span>Degalinė</span></div>
-    <div class="group">
-      <input id="station" class="station" type="text" placeholder="Pavadinimas arba adresas" autocomplete="off" enterkeyhint="done" aria-label="Degalinė">
-    </div>
+    <button id="stationBtn" class="stbtn" type="button">
+      <span><span id="stT" class="t"></span><span id="stD" class="d"></span></span>
+      <span class="chev">Keisti</span>
+    </button>
   </section>
 
   <section class="sec">
@@ -206,13 +286,12 @@ textarea:focus{outline:2px solid var(--tint);outline-offset:0}
   <div class="more">
     <input id="gal" class="vh" type="file" accept="image/*" multiple>
     <label for="gal" class="link">Pridėti iš galerijos</label>
-    <button id="reset" class="link danger" type="button" hidden>Pradėti naują apžiūrą</button>
   </div>
 </div>
 
 <input id="cam" class="vh" type="file" accept="image/*" capture="environment">
 
-<nav id="bar" class="bar" aria-label="Veiksmai">
+<nav id="bar" class="bar" aria-label="Veiksmai" hidden>
   <div class="bar-in">
     <label for="cam" class="btn primary">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/></svg>
@@ -226,7 +305,44 @@ textarea:focus{outline:2px solid var(--tint);outline-offset:0}
 </nav>
 
 <div id="toast" class="toast" role="status" hidden></div>
-<div id="viewer" class="viewer" hidden><img alt="PDF puslapis"></div>
+<div id="viewer" class="viewer" hidden><img alt="Peržiūra"></div>
+
+<section id="pick" class="sheet" aria-labelledby="pickTitle" hidden>
+  <div class="app">
+    <div class="nav"><button id="pickCancel" class="link" type="button">Atšaukti</button><h2 id="pickTitle">Kuri degalinė?</h2><span></span></div>
+    <label class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+      <input id="pickQ" type="search" placeholder="Numeris, miestas ar gatvė" autocomplete="off" aria-label="Ieškoti degalinės">
+    </label>
+    <div class="sec"><div class="sec-h"><span id="pickH"></span><span id="pickN"></span></div>
+    <ul id="pickList" class="group rows"></ul></div>
+  </div>
+</section>
+
+<section id="detail" class="sheet" aria-labelledby="detTitle" hidden>
+  <div class="app">
+    <div class="nav">
+      <button id="detBack" class="link back" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+        Istorija
+      </button>
+      <h2 id="detTitle">Vizitas</h2>
+      <span></span>
+    </div>
+    <p id="detSt" class="dt"></p>
+    <p id="detD" class="dd"></p>
+    <div id="detTiles" class="tiles"></div>
+    <div class="sec"><div class="sec-h"><span>Pastabos</span></div><ul id="detNotes" class="group notes"></ul></div>
+    <div class="actions">
+      <button id="detSend" class="btn primary" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/></svg>
+        Siųsti PDF
+      </button>
+      <button id="detResume" class="btn secondary" type="button">Tęsti vizitą</button>
+    </div>
+    <div class="more"><button id="detDel" class="link danger" type="button">Ištrinti iš istorijos</button></div>
+  </div>
+</section>
 
 <section id="step" class="sheet with-bar" aria-labelledby="stepTitle" hidden>
   <div class="app">
@@ -273,8 +389,7 @@ textarea:focus{outline:2px solid var(--tint);outline-offset:0}
         Bendrinti į Gmail
       </button>
     </div>
-    <p class="note">Atsidarys telefono bendrinimo langas. Jame pasirink Gmail.</p>
-    <p id="shared" class="note" role="status" hidden>Perduota. Kai laiškas Gmail paruoštas, sąrašo apačioje gali pradėti naują apžiūrą.</p>
+    <p class="note">Atsidarys telefono bendrinimo langas. Jame pasirink Gmail. Vizitas liks istorijoje.</p>
   </div>
 </section>
 
@@ -289,14 +404,22 @@ textarea:focus{outline:2px solid var(--tint);outline-offset:0}
       <span></span>
     </div>
     <div class="sec">
+      <div class="sec-h"><span>Degalinių sąrašas</span><span id="listCount"></span></div>
+      <div class="group">
+        <div class="field wide"><label for="listLink">Nuoroda</label><input id="listLink" type="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Įklijuok sąrašo nuorodą"></div>
+      </div>
+      <p class="note left">Sąrašas laikomas tik šiame telefone. Įklijuok nuorodą, kurią gavai laišku ar žinute.</p>
+      <div class="actions"><button id="listSave" class="btn secondary" type="button">Įkelti sąrašą</button></div>
+    </div>
+    <div class="sec">
       <div class="sec-h"><span>Balsas į tekstą</span></div>
       <div class="group">
         <div class="field wide"><label for="key">OpenAI raktas</label><input id="key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="sk-…"></div>
       </div>
       <p class="note left">Raktas laikomas tik šiame telefone. Jis siunčiamas tik į OpenAI, kai balso pastabą reikia paversti tekstu.</p>
+      <div class="actions"><button id="keySave" class="btn primary" type="button">Išsaugoti raktą</button></div>
     </div>
-    <div class="actions"><button id="keySave" class="btn primary" type="button">Išsaugoti</button></div>
-    <p class="note">Versija 2026-10-24.7</p>
+    <p class="note">Versija 2026-10-25.1</p>
   </div>
 </section>
 
@@ -318,13 +441,16 @@ const $ = s => document.querySelector(s);
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const plural = (n, f) => { const t = n % 10, h = n % 100; return f[t === 1 && h !== 11 ? 0 : t >= 2 && (h < 10 || h >= 20) ? 1 : 2]; };
 const PH = ['nuotrauka', 'nuotraukos', 'nuotraukų'], VO = ['balso pastaba', 'balso pastabos', 'balso pastabų'];
+const DG = ['degalinė', 'degalinės', 'degalinių'];
 const fmt = b => b < 1048576 ? Math.max(1, Math.round(b / 1024)) + ' KB'
   : (b / 1048576).toLocaleString('lt-LT', {maximumFractionDigits: 1}) + ' MB';
 const mmss = s => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
 const today = () => new Date().toLocaleDateString('lt-LT');
 const clock = (t = Date.now()) => new Date(t).toLocaleTimeString('lt-LT', {hour: '2-digit', minute: '2-digit'});
+const norm = s => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 // File names stay ASCII so every mail client keeps them intact
-const ascii = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'degaline';
+const ascii = s => norm(s).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'degaline';
+const esc = s => s.replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
 const ext = b => b.type.includes('webm') ? 'webm' : 'm4a';
 const ICON = {
   mic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5"/></svg>',
@@ -332,14 +458,11 @@ const ICON = {
   pause: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6.5" y="5" width="4" height="14" rx="1"/><rect x="13.5" y="5" width="4" height="14" rx="1"/></svg>',
 };
 
-let state = {station: '', date: today(), entries: []};
+let state = null;  // the open visit: {id, st, station, date, created, entries, sent, open}
+let visits = [];   // every saved visit on this phone, newest first
 let seq = 0;
 const urls = new Map();
 const urlOf = b => { if (!urls.has(b)) urls.set(b, URL.createObjectURL(b)); return urls.get(b); };
-
-// An inspection lives only while the app is open; closing it starts clean (no archive yet).
-// Earlier versions kept inspections in IndexedDB, so that copy is removed.
-try { indexedDB.deleteDatabase('apziura'); } catch {}
 
 let tt;
 function toast(m) { const t = $('#toast'); t.textContent = m; t.hidden = false; clearTimeout(tt); tt = setTimeout(() => t.hidden = true, 4000); }
@@ -352,29 +475,199 @@ function twoTap(btn, idle, armed, act) {
 }
 const linkBtn = (label, fn) => Object.assign(document.createElement('button'), {type: 'button', className: 'link', textContent: label, onclick: fn});
 
-// Sheets: one open at a time over the main list
+// Storage: visits (history and the open one) live in IndexedDB on this phone only.
+// The first version's storage is cleared.
+try { indexedDB.deleteDatabase('apziura'); } catch {}
+const DB = new Promise((ok, fail) => {
+  try {
+    const r = indexedDB.open('vizitavimas', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('visits', {keyPath: 'id'});
+    r.onsuccess = () => ok(r.result); r.onerror = () => fail(r.error);
+  } catch (err) { fail(err); }
+});
+DB.catch(() => {});
+const store = (mode, fn) => DB.then(db => new Promise((ok, fail) => {
+  const t = db.transaction('visits', mode), req = fn(t.objectStore('visits'));
+  t.oncomplete = () => ok(req.result); t.onerror = () => fail(t.error);
+}));
+let warned = false;
+const dbFail = () => { if (!warned) { warned = true; toast('Nepavyko išsaugoti telefone. Neuždaryk programėlės, kol neišsiųsi laiško.'); } };
+const putVisit = v => store('readwrite', s => s.put(v)).catch(dbFail);
+const delVisit = v => store('readwrite', s => s.delete(v.id)).catch(dbFail);
+// ponytail: the whole visit is rewritten on every change; store entries separately if this gets slow
+let saveT;
+function save() { if (!state) return; const v = state; clearTimeout(saveT); saveT = setTimeout(() => putVisit(v), 400); }
+
+// Station list: [number, address, opening] kept in this phone's storage, never in the app's code
+const LIST = 'vz-stations';
+let STATIONS = (() => { try { return JSON.parse(localStorage.getItem(LIST)) || []; } catch { return []; } })();
+const stById = id => STATIONS.find(s => s[0] === id);
+async function importList(text) {
+  const m = /#sarasas=([A-Za-z0-9_-]+)/.exec(text || '');
+  if (!m) throw new Error('nuorodoje nėra sąrašo');
+  const bin = Uint8Array.from(atob(m[1].replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+  const json = await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
+  const list = JSON.parse(json);
+  if (!Array.isArray(list) || !list.length || !list.every(s => Number.isInteger(s[0]) && typeof s[1] === 'string')) throw new Error('netinkamas sąrašas');
+  const same = JSON.stringify(list) === JSON.stringify(STATIONS);
+  STATIONS = list;
+  try { localStorage.setItem(LIST, JSON.stringify(list)); } catch {}
+  return same ? 0 : list.length;
+}
+function search(q, limit = 8) {
+  const toks = norm(q).trim().split(/\s+/).filter(Boolean);
+  if (!toks.length) return [];
+  const hits = STATIONS.filter(([id, addr]) => toks.every(t => /^\d+$/.test(t) ? String(id).startsWith(t) : norm(addr).includes(t)));
+  const exact = toks.find(t => /^\d+$/.test(t));
+  hits.sort((a, b) => (String(b[0]) === exact) - (String(a[0]) === exact) || a[0] - b[0]);
+  return hits.slice(0, limit);
+}
+function hl(text, q) {
+  const toks = norm(q).split(/\s+/).filter(t => t && !/^\d+$/.test(t)), n = norm(text);
+  let out = '', i = 0;
+  for (;;) {
+    let best = -1, len = 0;
+    for (const t of toks) { const j = n.indexOf(t, i); if (j >= 0 && (best < 0 || j < best)) { best = j; len = t.length; } }
+    if (best < 0) break;
+    out += esc(text.slice(i, best)) + '<mark>' + esc(text.slice(best, best + len)) + '</mark>'; i = best + len;
+  }
+  return out + esc(text.slice(i));
+}
+const split = a => { const i = a.indexOf(','); return i < 0 ? [a, ''] : [a.slice(0, i), a.slice(i + 1).trim()]; };
+function stRow([id, addr, opening], q) {
+  const [city, street] = split(addr), num = q && /^\d+$/.test(norm(q).trim().split(/\s+/)[0]) ? `<mark>${id}</mark>` : id;
+  return `<span class="n">Nr. ${num}</span><span class="a">${hl(city, q)}<small>${hl(street, q)}</small></span>${opening ? '<span class="chip warn">Atidaroma</span>' : '<span></span>'}`;
+}
+
+// Screens: home or the open visit underneath, sheets on top one at a time
 let openSheet = null, prevSheet = null, cur = null;
 function show(id) {
   if (openSheet) $(openSheet).hidden = true;
   openSheet = id; $(id).hidden = false; $(id).scrollTop = 0;
-  $('#main').inert = $('#bar').inert = true;
+  $('#home').inert = $('#main').inert = $('#bar').inert = true;
 }
 function hide() {
   if (openSheet) $(openSheet).hidden = true;
   openSheet = null; cur = null;
-  $('#main').inert = $('#bar').inert = false;
+  $('#home').inert = $('#main').inert = $('#bar').inert = false;
 }
 function showStep(e) { cur = e; show('#step'); render(); }
+function showHome() {
+  if (rec) rec.mr.stop();
+  hide(); $('#main').hidden = $('#bar').hidden = true; $('#home').hidden = false;
+  renderHome(); scrollTo(0, 0);
+}
+function showVisit() {
+  hide(); $('#home').hidden = true; $('#main').hidden = $('#bar').hidden = false;
+  render(); scrollTo(0, 0);
+}
 
-// Rendering
+function renderHome() {
+  $('#hdate').textContent = new Date().toLocaleDateString('lt-LT', {weekday: 'long', month: 'long', day: 'numeric'});
+  $('#noList').hidden = STATIONS.length > 0;
+  $('#resume').hidden = !state;
+  if (state) $('#resumeD').textContent = `${state.station} · ${state.entries.length} ${plural(state.entries.length, PH)}`;
+  const toks = norm($('#histQ').value).split(/\s+/).filter(Boolean);
+  const all = visits.filter(v => v !== state);
+  const list = all.filter(v => toks.every(t => (/^\d+$/.test(t) && String(v.st ?? '').startsWith(t)) || norm(v.station).includes(t)));
+  $('#hcount').textContent = all.length || '';
+  $('#hist').replaceChildren(...list.map(v => {
+    const li = document.createElement('li'), b = document.createElement('button');
+    b.type = 'button'; b.className = 'row';
+    b.innerHTML = `<div><div class="t"></div><div class="d"></div></div><span class="chip ${v.sent ? 'ok' : 'warn'}">${v.sent ? 'Perduota' : 'Neišsiųsta'}</span>`;
+    b.querySelector('.t').textContent = v.station;
+    b.querySelector('.d').textContent = `${v.date} · ${v.entries.length} ${plural(v.entries.length, PH)}`;
+    b.onclick = () => openDetail(v);
+    li.append(b); return li;
+  }));
+  $('#hist').hidden = !list.length;
+  $('#histEmpty').hidden = !!list.length;
+  $('#histEmpty').textContent = all.length ? 'Pagal šį filtrą vizitų nėra.' : 'Baigti vizitai bus čia.';
+}
+$('#histQ').oninput = renderHome;
+
+// Station picker, for a new visit or to change the open one
+let pickMode = 'new';
+function openPick(mode) { pickMode = mode; $('#pickQ').value = ''; renderPick(); show('#pick'); $('#pickQ').focus(); }
+function renderPick() {
+  const q = $('#pickQ').value.trim();
+  let rows;
+  if (q) rows = search(q).map(s => ({st: s[0], label: `Nr. ${s[0]} · ${s[1]}`, html: stRow(s, q)}));
+  else rows = [...new Set(visits.map(v => v.st).filter(id => id != null))].map(stById).filter(Boolean).slice(0, 5)
+    .map(s => ({st: s[0], label: `Nr. ${s[0]} · ${s[1]}`, html: stRow(s, '')}));
+  const found = rows.length;
+  if (q) rows.push({st: null, label: q, html: `<span class="n">+</span><span class="a">Kita vieta<small>${esc(q)}</small></span><span></span>`});
+  $('#pickH').textContent = q ? (found ? 'Siūlomos' : 'Sąraše nerasta') : found ? 'Neseniai lankytos' : STATIONS.length ? 'Įvesk numerį ar miestą' : 'Sąrašas neįkeltas: įrašyk vietą ranka';
+  $('#pickN').textContent = q && found ? found : '';
+  $('#pickList').replaceChildren(...rows.map(r => {
+    const li = document.createElement('li'), b = document.createElement('button');
+    b.type = 'button'; b.className = 'row st'; b.innerHTML = r.html; b.onclick = () => choose(r);
+    li.append(b); return li;
+  }));
+  $('#pickList').hidden = !rows.length;
+}
+$('#pickQ').oninput = renderPick;
+$('#pickCancel').onclick = hide;
+function choose(r) {
+  if (pickMode === 'change' && state) { state.st = r.st; state.station = r.label; hide(); render(); return; }
+  if (state) {
+    state.open = false;
+    if (state.entries.length) { putVisit(state); toast('Ankstesnis vizitas liko istorijoje kaip neišsiųstas.'); }
+    else { delVisit(state); visits = visits.filter(v => v !== state); }
+  }
+  state = {id: Date.now(), st: r.st, station: r.label, date: today(), created: Date.now(), entries: [], sent: null, open: true};
+  visits.unshift(state); putVisit(state);
+  showVisit();
+}
+$('#newVisit').onclick = () => openPick('new');
+$('#resumeGo').onclick = showVisit;
+$('#stationBtn').onclick = () => openPick('change');
+$('#toHome').onclick = showHome;
+
+// History detail
+let det = null;
+function openDetail(v) {
+  det = v;
+  $('#detSt').textContent = v.station;
+  $('#detD').textContent = `${v.date} · ${v.entries.length} ${plural(v.entries.length, PH)} · ${v.sent ? 'perduota ' + clock(v.sent) : 'neišsiųsta'}`;
+  $('#detTiles').replaceChildren(...v.entries.map((e, i) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.setAttribute('aria-label', `Nuotrauka ${i + 1}`);
+    b.append(Object.assign(document.createElement('img'), {src: urlOf(e.photo), alt: ''}));
+    b.onclick = () => view(urlOf(e.photo));
+    return b;
+  }));
+  $('#detNotes').replaceChildren(...v.entries.map((e, i) => {
+    const li = document.createElement('li'), t = e.text.trim();
+    li.innerHTML = `<b>${i + 1}.</b><span></span>`;
+    li.lastChild.textContent = t || (e.audio ? 'Tik balso pastaba' : 'Be pastabos');
+    if (!t) li.lastChild.className = 'm';
+    return li;
+  }));
+  $('#detResume').hidden = !!v.sent || !v.entries.length;
+  $('#detSend').disabled = !v.entries.length;
+  $('#detDel').textContent = 'Ištrinti iš istorijos'; delete $('#detDel').dataset.armed;
+  twoTap($('#detDel'), 'Ištrinti iš istorijos', 'Tikrai ištrinti?', () => {
+    delVisit(v); visits = visits.filter(x => x !== v); hide(); renderHome();
+  });
+  show('#detail');
+}
+$('#detBack').onclick = hide;
+$('#detSend').onclick = () => openLetter(det);
+$('#detResume').onclick = () => {
+  if (state && state !== det) { state.open = false; putVisit(state); }
+  state = det; state.open = true; putVisit(state); showVisit();
+};
+
+// The open visit
 function render() {
+  if (!state) return;
   const es = state.entries, n = es.length, v = es.filter(e => e.audio).length;
   const size = es.reduce((s, e) => s + e.size + (e.audio ? e.audio.size : 0), 0);
-  const [y, m, d] = state.date.split('-');
-  $('#date').textContent = new Date(y, m - 1, d).toLocaleDateString('lt-LT', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'});
+  $('#stT').textContent = state.st != null ? `Nr. ${state.st}` : state.station;
+  $('#stD').textContent = state.st != null ? state.station.replace(/^Nr\. \d+ · /, '') : 'Kita vieta';
   $('#sum').textContent = n ? `${n} ${plural(n, PH)}${v ? ` · ${v} ${plural(v, VO)}` : ''} · ${fmt(size)}` : '';
   $('#empty').hidden = n > 0;
-  $('#reset').hidden = !n;
   $('#count').textContent = n; $('#count').hidden = !n;
   $('#send').disabled = !n;
   $('#log').replaceChildren(...es.map((e, i) => card(e, i, 'n')));
@@ -384,6 +677,7 @@ function render() {
     $('#stepTitle').textContent = `Nuotrauka ${i + 1}`;
     $('#stepCard').replaceChildren(card(cur, i, 's'));
   }
+  save();
 }
 function card(e, i, pre) {
   const li = $('#tpl').content.firstElementChild.cloneNode(true);
@@ -395,7 +689,7 @@ function card(e, i, pre) {
   const ta = li.querySelector('textarea');
   ta.id = pre + e.id; ta.setAttribute('aria-label', `Pastaba prie nuotraukos ${i + 1}`);
   ta.value = e.text;
-  ta.oninput = () => { e.text = ta.value; };
+  ta.oninput = () => { e.text = ta.value; save(); };
   twoTap(li.querySelector('.del'), 'Ištrinti', 'Tikrai?', () => {
     if (rec && rec.e === e) return;
     if (playing === e) { player.pause(); playing = null; }
@@ -463,7 +757,7 @@ async function toggleRec(e) {
     clearInterval(r.timer); rec = null;
     tracks.forEach(t => { t.onended = null; });
     if (!chunks.length) toast('Įrašas tuščias: mikrofonas nieko neperdavė. Bandyk dar kartą.');
-    else if (state.entries.includes(e)) {
+    else if (state && state.entries.includes(e)) {
       e.audio = new Blob(chunks, {type: mr.mimeType || type || 'audio/mp4'});
       e.dur = Math.max(1, Math.round((Date.now() - t0) / 1000));
       transcribe(e);
@@ -498,14 +792,16 @@ const KEY = 'apziura-openai-key';
 const getKey = () => { try { return localStorage.getItem(KEY) || ''; } catch { return ''; } };
 async function transcribe(e) {
   if (!e.audio) return;
+  const owner = () => visits.find(v => v.entries.includes(e));
+  const done = () => { const v = owner(); if (v === state) render(); else if (v) putVisit(v); };
   const key = getKey();
-  if (!key) { e.tx = 'nokey'; render(); return; }
-  e.tx = 'busy'; render();
+  if (!key) { e.tx = 'nokey'; done(); return; }
+  e.tx = 'busy'; done();
   const fd = new FormData();
   fd.append('file', new File([e.audio], 'pastaba.' + ext(e.audio), {type: e.audio.type || 'audio/mp4'}));
   fd.append('model', 'gpt-4o-transcribe');
   fd.append('language', 'lt');
-  fd.append('prompt', 'Degalinės apžiūra: kolonėlės, kainų stendas, parduotuvė, kasa, kava, plovykla, tualetas, aikštelė.');
+  fd.append('prompt', 'Degalinės vizitas: kolonėlės, kainų stendas, parduotuvė, kasa, kava, plovykla, tualetas, aikštelė.');
   try {
     const r = await fetch('https://api.openai.com/v1/audio/transcriptions', {method: 'POST', headers: {Authorization: 'Bearer ' + key}, body: fd});
     const j = await r.json().catch(() => ({}));
@@ -517,20 +813,31 @@ async function transcribe(e) {
     e.tx = 'error';
     e.txErr = err instanceof TypeError ? 'nėra ryšio su OpenAI' : err.message;
   }
-  if (state.entries.includes(e)) { render(); }
+  done();
 }
-const retryAll = () => state.entries.filter(e => e.audio && (e.tx === 'nokey' || e.tx === 'error')).forEach(transcribe);
+const retryAll = () => (state ? state.entries : []).filter(e => e.audio && (e.tx === 'nokey' || e.tx === 'error')).forEach(transcribe);
 addEventListener('online', retryAll);
 
-function openSettings() { prevSheet = openSheet; const keep = cur; show('#settings'); cur = keep; $('#key').value = getKey(); }
+function openSettings() {
+  prevSheet = openSheet; const keep = cur; show('#settings'); cur = keep;
+  $('#key').value = getKey(); $('#listLink').value = '';
+  $('#listCount').textContent = STATIONS.length ? `${STATIONS.length} ${plural(STATIONS.length, DG)}` : 'neįkeltas';
+}
 $('#gear').onclick = openSettings;
-$('#setBack').onclick = () => { if (prevSheet) { show(prevSheet); render(); } else hide(); prevSheet = null; };
+$('#setBack').onclick = () => { if (prevSheet) { show(prevSheet); render(); } else { hide(); renderHome(); } prevSheet = null; };
 $('#keySave').onclick = () => {
   const k = $('#key').value.trim();
   try { k ? localStorage.setItem(KEY, k) : localStorage.removeItem(KEY); }
   catch { return toast('Nepavyko išsaugoti rakto šiame lange.'); }
   toast(k ? 'Raktas išsaugotas.' : 'Raktas pašalintas.');
   retryAll(); $('#setBack').click();
+};
+$('#listSave').onclick = async () => {
+  try {
+    const n = await importList($('#listLink').value);
+    toast(n ? `Degalinių sąrašas įkeltas: ${n}.` : 'Šis sąrašas jau įkeltas.');
+    $('#listCount').textContent = `${STATIONS.length} ${plural(STATIONS.length, DG)}`;
+  } catch (err) { toast(`Nepavyko įkelti sąrašo: ${err.message}.`); }
 };
 
 // Photos: longest side 1600 px, JPEG 75 %
@@ -555,27 +862,21 @@ async function addPhoto(file) {
 $('#next').onclick = () => { if (rec) rec.mr.stop(); };
 $('#cam').onchange = async ev => {
   const file = ev.target.files[0]; ev.target.value = '';
-  if (!file) return;
-  try { const e = await addPhoto(file); showStep(e); }
+  if (!file || !state) return;
+  try { showStep(await addPhoto(file)); }
   catch { toast('Nepavyko atidaryti nuotraukos. Nufotografuok dar kartą.'); }
 };
 $('#gal').onchange = async ev => {
   const files = [...ev.target.files]; ev.target.value = '';
+  if (!state) return;
   let ok = 0;
   for (const f of files) { try { await addPhoto(f); ok++; } catch {} }
   render();
   if (files.length) toast(ok === files.length ? `Pridėta: ${ok} ${plural(ok, PH)}.` : `Pridėta ${ok} iš ${files.length}. Kitų nuotraukų nepavyko atidaryti.`);
 };
 $('#done').onclick = () => { if (rec) rec.mr.stop(); hide(); render(); };
-$('#station').oninput = ev => { state.station = ev.target.value; };
-twoTap($('#reset'), 'Pradėti naują apžiūrą', 'Ištrinti viską ir pradėti iš naujo?', () => {
-  if (rec) rec.mr.stop();
-  player.pause(); playing = null;
-  state = {station: '', date: today(), entries: []};
-  $('#station').value = ''; render(); scrollTo(0, 0);
-});
 
-// Letter: one PDF with every photo next to its note; a voice file is attached only when it has no text.
+// Letter: one PDF with every photo next to its note; voice notes ride inside the PDF.
 // Pages are drawn on a canvas with the phone's own font (Lithuanian letters just work) and stored as JPEGs.
 const A4W = 1240, A4H = 1754, M = 90, HEAD = 250, FOOT = 70, GAP = 44;  // A4 at 150 dpi
 const PHOTO_W = 560, PHOTO_H = 420, TX = M + PHOTO_W + 36, TW = A4W - M - TX, LH = 38;
@@ -593,8 +894,8 @@ function wrap(ctx, text, width) {
   }
   return lines;
 }
-async function renderPages() {
-  const es = state.entries, st = state.station.trim() || 'Degalinė nenurodyta', times = es.map(e => e.time).sort();
+async function renderPages(v) {
+  const es = v.entries, st = v.station, times = es.map(e => e.time).sort();
   const c = document.createElement('canvas'); c.width = A4W; c.height = A4H;
   const x = c.getContext('2d');
   x.font = `26px ${FONT}`;
@@ -613,11 +914,12 @@ async function renderPages() {
   for (const [p, list] of pages.entries()) {
     x.fillStyle = '#FFFFFF'; x.fillRect(0, 0, A4W, A4H);
     if (p === 0) {
-      x.fillStyle = '#6D6D72'; x.font = `600 24px ${FONT}`; x.fillText('DEGALINĖS APŽIŪRA', M, M + 24);
-      x.fillStyle = '#000000'; x.font = `700 56px ${FONT}`; x.fillText(st, M, M + 98);
+      x.fillStyle = '#6D6D72'; x.font = `600 24px ${FONT}`; x.fillText('DEGALINĖS VIZITAS', M, M + 24);
+      x.fillStyle = '#000000'; x.font = `700 48px ${FONT}`;
+      wrap(x, st, A4W - 2 * M).slice(0, 2).forEach((l, n) => x.fillText(l, M, M + 92 + n * 56));
       x.fillStyle = '#6D6D72'; x.font = `28px ${FONT}`;
-      x.fillText(`${state.date} · ${times[0]}–${times.at(-1)} · ${es.length} ${plural(es.length, PH)}`, M, M + 148);
-      x.fillStyle = '#C6C6C8'; x.fillRect(M, M + 190, A4W - 2 * M, 2);
+      x.fillText(`${v.date} · ${times[0]}–${times.at(-1)} · ${es.length} ${plural(es.length, PH)}`, M, M + 196);
+      x.fillStyle = '#C6C6C8'; x.fillRect(M, M + 226, A4W - 2 * M, 2);
     }
     for (const [j, it] of list.entries()) {
       if (j) { x.fillStyle = '#E5E5EA'; x.fillRect(M, it.y - GAP / 2, A4W - 2 * M, 2); }
@@ -640,7 +942,7 @@ async function renderPages() {
       }
     }
     x.fillStyle = '#8A8A8E'; x.font = `22px ${FONT}`;
-    x.fillText(`Apžiūra · ${st} · ${state.date}`, M, A4H - M + 30);
+    x.fillText(`Vizitas · ${wrap(x, st, A4W - 2 * M - 120)[0]} · ${v.date}`, M, A4H - M + 30);
     x.textAlign = 'right'; x.fillText(`${p + 1} / ${pages.length}`, A4W - M, A4H - M + 30); x.textAlign = 'left';
     const jpeg = await new Promise((ok, fail) => c.toBlob(b => b ? ok(b) : fail(new Error('toBlob')), 'image/jpeg', 0.8));
     out.push({jpeg, audios: list.filter(it => it.e.audio).map(it => ({e: it.e, i: it.i, box: it.box}))});
@@ -682,27 +984,27 @@ async function makePdf(pages, base) {
   return new Blob(parts, {type: 'application/pdf'});
 }
 
-let doc = null, pageUrls = [], buildId = 0;
+let doc = null, pageUrls = [], buildId = 0, letterVisit = null, letterFrom = null;
 function view(u) { $('#viewer img').src = u; $('#viewer').hidden = false; }
 $('#viewer').onclick = () => { $('#viewer').hidden = true; };
-$('#send').onclick = async () => {
-  if (rec) rec.mr.stop();
-  if (state.entries.some(e => e.tx === 'busy')) toast('Dar verčiu balsą į tekstą. Palauk kelias sekundes ir atidaryk laišką iš naujo.');
-  const es = state.entries, st = state.station.trim() || 'Degalinė nenurodyta', times = es.map(e => e.time).sort();
+async function openLetter(v) {
+  letterVisit = v; letterFrom = openSheet;
+  if (v.entries.some(e => e.tx === 'busy')) toast('Dar verčiu balsą į tekstą. Palauk kelias sekundes ir atidaryk laišką iš naujo.');
+  const es = v.entries, st = v.station, times = es.map(e => e.time).sort();
   const notes = es.map((e, i) => `${i + 1}. ${e.text.trim() || (e.audio ? 'Tik balso pastaba (PDF viduje)' : 'Be pastabos')}`).join('\n');
-  $('#subj').value = `Apžiūra: ${st} · ${state.date}`;
-  $('#body').value = `Degalinė: ${st}\nData: ${state.date}, ${times[0]}–${times.at(-1)}\n\nPastabos:\n${notes}\n\nNuotraukos su pastabomis yra PDF priede.`;
+  $('#subj').value = `Vizitas: ${st} · ${v.date}`;
+  $('#body').value = `Degalinė: ${st}\nData: ${v.date}, ${times[0]}–${times.at(-1)}\n\nPastabos:\n${notes}\n\nNuotraukos su pastabomis yra PDF priede.`;
   const run = ++buildId;
   doc = null; pageUrls.forEach(u => URL.revokeObjectURL(u)); pageUrls = [];
   $('#pages').replaceChildren(); $('#pages').hidden = true; $('#fsum').textContent = '';
   $('#pdfBusy').innerHTML = '<span class="spin"></span>Kuriu PDF dokumentą…'; $('#pdfBusy').hidden = false;
-  $('#share').disabled = true; $('#shared').hidden = true;
+  $('#share').disabled = true;
   show('#sheet'); $('#back').focus();
   try {
-    const base = `${ascii(state.station.trim())}_${state.date}`, name = `Apziura_${base}.pdf`;
-    const pages = await renderPages(), pdf = await makePdf(pages, base);
+    const base = `${ascii(st)}_${v.date}`, name = `Vizitas_${base}.pdf`;
+    const pages = await renderPages(v), pdf = await makePdf(pages, base);
     if (run !== buildId) return;
-    const voice = es.filter(e => e.audio).length;
+    const voiced = es.filter(e => e.audio).length;
     doc = [new File([pdf], name, {type: 'application/pdf'})];
     pageUrls = pages.map(pg => URL.createObjectURL(pg.jpeg));
     $('#pages').replaceChildren(...pageUrls.map((u, i) => {
@@ -712,19 +1014,37 @@ $('#send').onclick = async () => {
       b.onclick = () => view(u);
       return b;
     }));
-    $('#fsum').textContent = `${name} · ${pages.length} psl. · ${fmt(pdf.size)}` + (voice ? ` · ${voice} ${plural(voice, VO)} PDF viduje` : '');
+    $('#fsum').textContent = `${name} · ${pages.length} psl. · ${fmt(pdf.size)}` + (voiced ? ` · ${voiced} ${plural(voiced, VO)} PDF viduje` : '');
     $('#pdfBusy').hidden = true; $('#pages').hidden = false; $('#share').disabled = false;
   } catch {
     if (run === buildId) $('#pdfBusy').textContent = 'Nepavyko sukurti PDF. Grįžk atgal ir bandyk dar kartą.';
   }
-};
-$('#back').onclick = () => { buildId++; hide(); $('#send').focus(); };
+}
+$('#send').onclick = () => { if (rec) rec.mr.stop(); openLetter(state); };
+$('#back').onclick = () => { buildId++; if (letterFrom) show(letterFrom); else hide(); };
 $('#share').onclick = async () => {
   const data = {files: doc, title: $('#subj').value, text: $('#body').value};
   if (!doc || !navigator.canShare?.(data)) return toast('Šiame lange failų bendrinti negalima. Atidaryk programėlę iš telefono pradžios ekrano.');
-  try { await navigator.share(data); $('#shared').hidden = false; }
-  catch (err) { if (err.name !== 'AbortError') toast('Nepavyko atidaryti bendrinimo lango.'); }
+  try {
+    await navigator.share(data);
+    const v = letterVisit;
+    v.sent = v.sent || Date.now(); v.open = false; putVisit(v);
+    if (v === state) state = null;
+    showHome(); toast('Vizitas išsaugotas istorijoje.');
+  } catch (err) { if (err.name !== 'AbortError') toast('Nepavyko atidaryti bendrinimo lango.'); }
 };
 
-render();
+(async () => {
+  if (location.hash.includes('sarasas=')) {
+    try { const n = await importList(location.hash); if (n) toast(`Degalinių sąrašas įkeltas: ${n}.`); }
+    catch (err) { toast(`Nepavyko įkelti sąrašo: ${err.message}.`); }
+  }
+  try { visits = (await store('readonly', s => s.getAll())) || []; } catch { visits = []; }
+  visits.sort((a, b) => b.created - a.created);
+  seq = Math.max(0, ...visits.flatMap(v => v.entries.map(e => e.id)));
+  state = visits.find(v => v.open) || null;
+  renderHome();
+  state?.entries.filter(e => e.tx === 'busy').forEach(transcribe);
+  navigator.storage?.persist?.().catch(() => {});
+})();
 </script>

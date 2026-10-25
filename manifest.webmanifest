@@ -1,9 +1,7 @@
 {
-  "name": "Degalinių apžiūra",
-  "short_name": "Apžiūra",
+  "name": "Vizitavimas",
+  "short_name": "Vizitavimas",
   "lang": "lt",
-  "start_url": "./",
-  "scope": "./",
   "display": "standalone",
   "background_color": "#F2F2F7",
   "theme_color": "#F2F2F7",
